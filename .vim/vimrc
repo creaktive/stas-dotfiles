@@ -23,9 +23,7 @@ set showmatch
 set incsearch
 
 " check perl code with :make
-autocmd FileType perl set makeprg=perl\ -cw\ %\ $*
-autocmd FileType perl set errorformat=%f:%l:%m
-autocmd FileType perl set autowrite
+autocmd FileType perl compiler perl
 
 set nobackup
 set nowritebackup
