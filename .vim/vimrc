@@ -21,6 +21,7 @@ set smartindent
 
 set showmatch
 set incsearch
+set ignorecase
 
 " check perl code with :make
 autocmd FileType perl compiler perl
@@ -42,6 +43,9 @@ vmap <S-Tab> <gv
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
 nnoremap <silent> <F8> :TlistToggle<CR>
 "let Tlist_Auto_Open=1
+
+set autochdir
+set tags=tags,./tags,../tags,../../tags,../../../tags,../../../../tags,../../../../../tags
 
 
 " An example for a vimrc file.
