@@ -48,6 +48,10 @@ let Tlist_Use_Right_Window=1
 set autochdir
 set tags=tags,./tags,../tags,../../tags,../../../tags,../../../../tags,../../../../../tags
 
+:noremap <C-left> :bprev<CR>
+:noremap <C-right> :bnext<CR>
+:let g:buftabs_only_basename=1
+
 
 " An example for a vimrc file.
 "
