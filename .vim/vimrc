@@ -4,10 +4,13 @@ set t_Co=256
 set guifont=ProFont
 colorscheme zenburn
 
+set spell spelllang=pt,en
+
 set tabstop=4
 set shiftwidth=4
 set softtabstop=4
 set expandtab
+set linebreak
 
 set foldenable
 set foldmethod=syntax
