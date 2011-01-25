@@ -4,6 +4,13 @@ set t_Co=256
 set guifont=ProFont
 colorscheme zenburn
 
+set wildmenu
+set cursorline
+set statusline=%t%Y%R\ <%{&ff}
+set statusline+=%{\"[\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\").\"]\"}
+set statusline+=>\ {%4c,%4l}\ 0x\%02.2B\ %p%%\ (%L)
+set laststatus=2
+
 set spell spelllang=pt,en
 
 set tabstop=4
@@ -31,6 +38,7 @@ autocmd FileType perl compiler perl
 
 set nobackup
 set nowritebackup
+set noswapfile
 
 " dont use Q for Ex mode
 map Q :q
