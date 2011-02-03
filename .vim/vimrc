@@ -59,6 +59,7 @@ vmap <S-Tab> <gv
 "nmap <S-Tab> ^i<bs><esc>
 
 let g:SuperTabDefaultCompletionType = "context"
+let g:manpageview_multimanpage = 0
 
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
 nnoremap <silent> <F8> :TlistToggle<CR>
