@@ -42,6 +42,7 @@ set ignorecase
 filetype plugin indent on
 " check perl code with :make
 autocmd FileType perl compiler perl
+let g:perl_compiler_force_warnings = 0
 
 set nobackup
 set nowritebackup
