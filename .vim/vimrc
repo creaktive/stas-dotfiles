@@ -42,7 +42,9 @@ set ignorecase
 filetype plugin indent on
 " check perl code with :make
 autocmd FileType perl compiler perl
-let g:perl_compiler_force_warnings = 0
+autocmd FileType perl setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
+autocmd FileType perl setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
+" let g:perl_compiler_force_warnings = 0
 
 set nobackup
 set nowritebackup
