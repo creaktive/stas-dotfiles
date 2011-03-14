@@ -70,7 +70,7 @@ nnoremap <silent> <F8> :TlistToggle<CR>
 let Tlist_Use_Right_Window=1
 
 set autochdir
-set tags=tags,./tags,../tags,../../tags,../../../tags,../../../../tags,../../../../../tags
+set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,./../../../../../tags
 
 nnoremap <C-down> :BufExplorer<CR>
 noremap <C-left> :bprev<CR>
