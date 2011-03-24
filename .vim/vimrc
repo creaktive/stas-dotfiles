@@ -90,3 +90,6 @@ autocmd BufReadPost *
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
     \ endif
+
+map <F5> :make
+map <F6> :%!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q
