@@ -28,9 +28,6 @@ set linebreak
 set foldenable
 set foldmethod=syntax
 set foldlevel=10
-let perl_fold=1
-let perl_extended_vars=1
-let perl_include_pod=1
 
 set autoindent
 set smartindent
@@ -40,11 +37,20 @@ set incsearch
 set ignorecase
 
 filetype plugin indent on
-" check perl code with :make
-autocmd FileType perl compiler perl
-autocmd FileType perl setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
-autocmd FileType perl setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
+
 " let g:perl_compiler_force_warnings = 0
+let perl_fold=1
+let perl_extended_vars=1
+let perl_include_pod=1
+autocmd FileType perl :call SetupPerl()
+function! SetupPerl()
+    compiler perl
+    setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
+    setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
+
+    map <F6> :%!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q<CR>
+    vmap <F6> :!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q<CR>
+endfunction
 
 set nobackup
 set nowritebackup
@@ -64,6 +70,7 @@ vmap <S-Tab> <gv
 let g:SuperTabDefaultCompletionType = "context"
 let g:manpageview_multimanpage = 0
 
+map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
 nnoremap <silent> <F8> :TlistToggle<CR>
 "let Tlist_Auto_Open=1
@@ -90,6 +97,3 @@ autocmd BufReadPost *
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
     \ endif
-
-map <F5> :make
-map <F6> :%!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q
