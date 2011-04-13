@@ -71,6 +71,9 @@ vmap <S-Tab> <gv
 let g:SuperTabDefaultCompletionType = "context"
 let g:manpageview_multimanpage = 0
 
+" Ctrl-r searches for selected text
+vnoremap <C-r> "zy:%s/<C-r>z
+
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
 nnoremap <silent> <F8> :TlistToggle<CR>
