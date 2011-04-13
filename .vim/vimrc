@@ -2,6 +2,7 @@ set nocompatible
 set backspace=indent,eol,start
 
 set number
+set mouse=a
 set vb
 set t_Co=256
 set guifont=ProFont
