@@ -53,9 +53,9 @@ function! SetupPerl()
     vmap <F6> :!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q<CR>
 endfunction
 
-set nobackup
-set nowritebackup
-set noswapfile
+set backup
+set backupdir=/tmp
+set dir=/tmp
 
 " dont use Q for Ex mode
 map Q :q
