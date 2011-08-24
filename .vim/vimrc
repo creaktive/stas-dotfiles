@@ -61,6 +61,9 @@ set dir=/tmp
 " dont use Q for Ex mode
 map Q :q
 
+" write alias
+cnoreabbrev W w
+
 " make tab in v mode ident code
 vmap <Tab> >gv
 vmap <S-Tab> <gv
@@ -74,6 +77,10 @@ let g:manpageview_multimanpage = 0
 
 " Ctrl-r searches for selected text
 vnoremap <C-r> "zy:%s/<C-r>z
+
+" eregex
+nnoremap / :M/
+nnoremap ,/ /
 
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
