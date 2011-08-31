@@ -80,7 +80,9 @@ vnoremap <C-r> "zy:%s/<C-r>z
 
 " eregex
 nnoremap / :M/
+nnoremap ? :M?
 nnoremap ,/ /
+nnoremap ,? /
 
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
