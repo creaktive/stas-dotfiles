@@ -58,6 +58,8 @@ set backup
 set backupdir=/tmp
 set dir=/tmp
 
+set grepprg=ack\ -a
+
 " dont use Q for Ex mode
 map Q :q
 
