@@ -64,7 +64,8 @@ set grepprg=ack\ -a
 " dont use Q for Ex mode
 map Q :q
 
-" write alias
+" edit/write alias
+cnoreabbrev E e
 cnoreabbrev W w
 
 " make tab in v mode ident code
