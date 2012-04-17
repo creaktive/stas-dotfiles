@@ -64,9 +64,20 @@ set grepprg=ack\ -a
 " dont use Q for Ex mode
 map Q :q
 
-" edit/write alias
+" edit/write/quit alias
 cnoreabbrev E e
 cnoreabbrev W w
+cnoreabbrev Q w
+
+" kill'em all!!!
+noremap     <Up> ""
+noremap!    <Up> <Esc>
+noremap     <Down> ""
+noremap!    <Down> <Esc>
+noremap     <Left> ""
+noremap!    <Left> <Esc>
+noremap     <Right> ""
+noremap!    <Right> <Esc>
 
 " make tab in v mode ident code
 vmap <Tab> >gv
