@@ -70,14 +70,26 @@ cnoreabbrev W w
 cnoreabbrev Q w
 
 " kill'em all!!!
-noremap     <Up> ""
-noremap!    <Up> <Esc>
-noremap     <Down> ""
-noremap!    <Down> <Esc>
-noremap     <Left> ""
-noremap!    <Left> <Esc>
-noremap     <Right> ""
-noremap!    <Right> <Esc>
+" noremap     <Up> ""
+" noremap!    <Up> <Esc>
+" noremap     <Down> ""
+" noremap!    <Down> <Esc>
+" noremap     <Left> ""
+" noremap!    <Left> <Esc>
+" noremap     <Right> ""
+" noremap!    <Right> <Esc>
+noremap     <Insert> ""
+noremap!    <Insert> <Esc>
+noremap     <Delete> ""
+noremap!    <Delete> <Esc>
+noremap     <Home> ""
+noremap!    <Home> <Esc>
+noremap     <End> ""
+noremap!    <End> <Esc>
+noremap     <PageUp> ""
+noremap!    <PageUp> <Esc>
+noremap     <PageDown> ""
+noremap!    <PageDown> <Esc>
 
 " make tab in v mode ident code
 vmap <Tab> >gv
