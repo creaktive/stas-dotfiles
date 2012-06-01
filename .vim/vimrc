@@ -71,25 +71,28 @@ cnoreabbrev Q w
 
 " kill'em all!!!
 " noremap     <Up> ""
-" noremap!    <Up> <Esc>
+" noremap!    <Up> <NOP>
 " noremap     <Down> ""
-" noremap!    <Down> <Esc>
+" noremap!    <Down> <NOP>
 " noremap     <Left> ""
-" noremap!    <Left> <Esc>
+" noremap!    <Left> <NOP>
 " noremap     <Right> ""
-" noremap!    <Right> <Esc>
+" noremap!    <Right> <NOP>
 noremap     <Insert> ""
-noremap!    <Insert> <Esc>
+noremap!    <Insert> <NOP>
 noremap     <Delete> ""
-noremap!    <Delete> <Esc>
+noremap!    <Delete> <NOP>
 noremap     <Home> ""
-noremap!    <Home> <Esc>
+noremap!    <Home> <NOP>
 noremap     <End> ""
-noremap!    <End> <Esc>
+noremap!    <End> <NOP>
 noremap     <PageUp> ""
-noremap!    <PageUp> <Esc>
+noremap!    <PageUp> <NOP>
 noremap     <PageDown> ""
-noremap!    <PageDown> <Esc>
+noremap!    <PageDown> <NOP>
+
+" now all operations work with the OS clipboard
+set clipboard=unnamed
 
 " make tab in v mode ident code
 vmap <Tab> >gv
