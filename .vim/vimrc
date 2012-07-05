@@ -92,7 +92,7 @@ noremap     <PageDown> ""
 noremap!    <PageDown> <NOP>
 
 " now all operations work with the OS clipboard
-set clipboard=unnamed
+"set clipboard=unnamed
 
 " make tab in v mode ident code
 vmap <Tab> >gv
