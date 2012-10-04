@@ -16,6 +16,7 @@ set cursorline
 set statusline=%t%Y%R\ <%{&ff}
 set statusline+=%{\"[\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\").\"]\"}
 set statusline+=>\ {%4c,%4l}\ 0x\%02.2B\ %p%%\ (%L)
+set statusline+=%{fugitive#statusline()}
 set laststatus=2
 
 set spell spelllang=pt,en
