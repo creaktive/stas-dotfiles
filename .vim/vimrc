@@ -116,7 +116,7 @@ nnoremap ,? /
 
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
-nnoremap <silent> <F8> :TlistToggle<CR>
+nnoremap <silent> <F8> :TagbarToggle<CR>
 "let Tlist_Auto_Open=1
 let Tlist_Use_Right_Window=1
 
