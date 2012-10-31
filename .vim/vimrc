@@ -6,6 +6,7 @@ set mouse=a
 set vb
 set t_Co=256
 set guifont=ProFont
+set guioptions-=T
 colorscheme zenburn
 
 syntax on
@@ -13,10 +14,10 @@ set hlsearch
 
 set wildmenu
 set cursorline
-set statusline=%t%Y%R\ <%{&ff}
-set statusline+=%{\"[\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\").\"]\"}
-set statusline+=>\ {%4c,%4l}\ 0x\%02.2B\ %p%%\ (%L)
-set statusline+=%{fugitive#statusline()}
+"set statusline=%t%Y%R\ <%{&ff}
+"set statusline+=%{\"[\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\").\"]\"}
+"set statusline+=>\ {%4c,%4l}\ 0x\%02.2B\ %p%%\ (%L)
+"set statusline+=%{fugitive#statusline()}
 set laststatus=2
 
 set spell spelllang=pt,en
@@ -60,7 +61,7 @@ set backup
 set backupdir=/tmp
 set dir=/tmp
 
-set grepprg=ack\ -a
+"set grepprg=ack\ -a
 
 " dont use Q for Ex mode
 map Q :q
@@ -124,10 +125,10 @@ let Tlist_Use_Right_Window=1
 set autochdir
 set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,./../../../../../tags
 
-nnoremap <C-down> :BufExplorer<CR>
-noremap <C-left> :bprev<CR>
-noremap <C-right> :bnext<CR>
-let g:buftabs_only_basename=1
+"nnoremap <C-down> :BufExplorer<CR>
+"noremap <C-left> :bprev<CR>
+"noremap <C-right> :bnext<CR>
+"let g:buftabs_only_basename=1
 
 highlight clear SpellBad
 highlight SpellBad gui=undercurl guisp=#bc6c4c
