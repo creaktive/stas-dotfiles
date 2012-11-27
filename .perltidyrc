@@ -1,0 +1,10 @@
+-bbt=0  # block brace tightness (default: 0)
+-bt=2   # brace tightness (default: 1)
+-ce     # cuddled else
+-l=0    # don't break lines
+-naws   # delete whitespaces, don't add
+-nbbc   # no blank lines before comments
+-nsfs   # no space for semicolon
+-otr    # avoid breaks on opening token
+-pt=2   # paren tightness (default: 1)
+-q      # quiet

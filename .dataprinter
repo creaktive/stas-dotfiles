@@ -1,0 +1,8 @@
+{
+    colored         => 1,
+    return_value    => 'pass',
+    caller_info     => 1,
+    filters         => {
+        -external   => [qw(DateTime DB URI)],
+    },
+};

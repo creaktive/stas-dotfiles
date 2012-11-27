@@ -1,0 +1,9 @@
+[user]
+	name = Stanislaw Pusep
+	email = creaktive@gmail.com
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+[push]
+	default = matching
