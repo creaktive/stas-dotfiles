@@ -3,6 +3,6 @@
     return_value    => 'pass',
     caller_info     => 1,
     filters         => {
-        -external   => [qw(DateTime DB URI)],
+        -external   => [qw(DateTime DB Digest JSON URI)],
     },
 };

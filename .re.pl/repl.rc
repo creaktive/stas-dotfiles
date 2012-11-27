@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use common::sense;
 use lib 'lib';
 use open ':locale';
@@ -7,15 +7,15 @@ use lexicals;
 
 #use Data::Dumper;
 use Data::Printer;
-#use Digest::MD5 qw(md5_hex md5_base64);
-#use Digest::SHA qw(sha1_hex sha1_base64);
-#use Encode;
-#use File::Slurp;
-#use LWP::Simple;
-#use List::MoreUtils ':all';
-#use List::Util qw(first max maxstr min minstr reduce shuffle sum);
+use Digest::MD5 qw(md5_hex md5_base64);
+use Digest::SHA qw(sha1_hex sha1_base64);
+use Encode;
+use File::Slurp;
+use LWP::Simple;
+use List::MoreUtils ':all';
+use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 #use MIME::Base64;
-#use Scalar::Util qw(blessed dualvar isweak readonly refaddr reftype tainted weaken isvstring looks_like_number set_prototype);
+use Scalar::Util qw(blessed dualvar isweak readonly refaddr reftype tainted weaken isvstring looks_like_number set_prototype);
 #use Text::CSV;
 #use Tie::Handle::CSV;
 
