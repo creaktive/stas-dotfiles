@@ -53,8 +53,8 @@ function! SetupPerl()
     setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
     setlocal path+=.,..,../..,../../..,lib
 
-    map <F6> :%!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q<CR>
-    vmap <F6> :!perltidy -bbt=1 -bt=2 -ce -l=0 -naws -nbbc -nsfs -otr -pt=2 -q<CR>
+    map <F6> :%!perltidy<CR>
+    vmap <F6> :!perltidy<CR>
 endfunction
 
 set backup
