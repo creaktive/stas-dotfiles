@@ -44,6 +44,13 @@ if (-x q{/usr/sbin/ioreg}) {
     printf q{ b:%s%.01f%%},
         $battery[2] =~ /^y/ix ? q{} : q{!},
         100 * $battery[1] / $battery[0];
+} elsif (
+    -x q{/usr/bin/acpi}
+    and qx{acpi} =~ /^Battery\s+0:\s+(\w+),\s+(\d+%)/ix
+) {
+    printf q{ b:%s%s},
+        $1 eq q{Discharging} ? q{!} : q{},
+        $2;
 }
 
 printf qq{ %02d:%02d\n}, (localtime)[2, 1];
