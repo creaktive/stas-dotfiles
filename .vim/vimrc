@@ -7,7 +7,10 @@ set vb
 set t_Co=256
 set guifont=ProFont
 set guioptions-=T
-colorscheme zenburn
+"colorscheme zenburn
+colorscheme solarized
+let g:solarized_termcolors=256
+set background=dark
 
 syntax on
 set hlsearch
