@@ -12,7 +12,7 @@ export PERL_MM_USE_DEFAULT=1
 
 export EDITOR=vim
 export HISTCONTROL=ignoreboth
-export HISTSIZE=10000
+export HISTSIZE=20000
 export LESS=' -iR '
 
 set -o vi
@@ -23,3 +23,6 @@ bind -m vi-insert "\C-p":dynamic-complete-history
 bind -m vi-insert "\C-n":menu-complete
 # ^l clear screen
 bind -m vi-insert "\C-l":clear-screen
+
+bind '"\C-[[A": history-search-backward'
+bind '"\C-[[B": history-search-forward'
