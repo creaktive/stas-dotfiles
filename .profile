@@ -13,7 +13,7 @@ export PERL_MM_USE_DEFAULT=1
 export EDITOR=vim
 export HISTCONTROL=ignoreboth
 export HISTSIZE=20000
-export LESS=' -iR '
+export LESS=' -SIR '
 
 set -o vi
 
