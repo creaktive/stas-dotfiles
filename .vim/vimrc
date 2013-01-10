@@ -8,8 +8,8 @@ set t_Co=256
 set guifont=ProFont
 set guioptions-=T
 "colorscheme zenburn
-colorscheme solarized
 let g:solarized_termcolors=256
+colorscheme solarized
 set background=dark
 
 syntax on
