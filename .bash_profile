@@ -26,6 +26,7 @@ export HISTSIZE=32768
 export LESS=' -SIR '
 
 set -o vi
+shopt -s extglob
 
 # ^p check for partial match in history
 bind -m vi-insert "\C-p":dynamic-complete-history
