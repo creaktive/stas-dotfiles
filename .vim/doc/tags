@@ -86,6 +86,10 @@
 :AckAdd	ack.txt	/*:AckAdd*
 :AckFile	ack.txt	/*:AckFile*
 :AckFromSearch	ack.txt	/*:AckFromSearch*
+:CoffeeCompile	coffee-script.txt	/*:CoffeeCompile*
+:CoffeeLint	coffee-script.txt	/*:CoffeeLint*
+:CoffeeMake	coffee-script.txt	/*:CoffeeMake*
+:CoffeeRun	coffee-script.txt	/*:CoffeeRun*
 :CtrlP	ctrlp.txt	/*:CtrlP*
 :CtrlPBookmarkDir	ctrlp.txt	/*:CtrlPBookmarkDir*
 :CtrlPBookmarkDirAdd	ctrlp.txt	/*:CtrlPBookmarkDirAdd*
@@ -290,6 +294,15 @@ ack-author	ack.txt	/*ack-author*
 ack-mappings	ack.txt	/*ack-mappings*
 ack.txt	ack.txt	/*ack.txt*
 before	solarized.txt	/*before*
+coffee-script	coffee-script.txt	/*coffee-script*
+coffee-script-author	coffee-script.txt	/*coffee-script-author*
+coffee-script-commands	coffee-script.txt	/*coffee-script-commands*
+coffee-script-contents	coffee-script.txt	/*coffee-script-contents*
+coffee-script-introduction	coffee-script.txt	/*coffee-script-introduction*
+coffee-script-license	coffee-script.txt	/*coffee-script-license*
+coffee-script-settings	coffee-script.txt	/*coffee-script-settings*
+coffee-script.txt	coffee-script.txt	/*coffee-script.txt*
+compiler-coffee-script	coffee-script.txt	/*compiler-coffee-script*
 ctrlp-changelog	ctrlp.txt	/*ctrlp-changelog*
 ctrlp-commands	ctrlp.txt	/*ctrlp-commands*
 ctrlp-contents	ctrlp.txt	/*ctrlp-contents*
@@ -332,6 +345,7 @@ eregex-options	eregex.txt	/*eregex-options*
 eregex-principle	eregex.txt	/*eregex-principle*
 eregex-table	eregex.txt	/*eregex-table*
 eregex.txt	eregex.txt	/*eregex.txt*
+ft-coffee-script-syntax	coffee-script.txt	/*ft-coffee-script-syntax*
 fugitive	fugitive.txt	/*fugitive*
 fugitive#statusline()	fugitive.txt	/*fugitive#statusline()*
 fugitive-:Gblame	fugitive.txt	/*fugitive-:Gblame*
@@ -384,6 +398,11 @@ g:SuperTabMappingTabLiteral	supertab.txt	/*g:SuperTabMappingTabLiteral*
 g:SuperTabNoCompleteAfter	supertab.txt	/*g:SuperTabNoCompleteAfter*
 g:SuperTabNoCompleteBefore	supertab.txt	/*g:SuperTabNoCompleteBefore*
 g:SuperTabRetainCompletionDuration	supertab.txt	/*g:SuperTabRetainCompletionDuration*
+g:coffee_compile_vert	coffee-script.txt	/*g:coffee_compile_vert*
+g:coffee_compiler	coffee-script.txt	/*g:coffee_compiler*
+g:coffee_lint_options	coffee-script.txt	/*g:coffee_lint_options*
+g:coffee_linter	coffee-script.txt	/*g:coffee_linter*
+g:coffee_make_options	coffee-script.txt	/*g:coffee_make_options*
 g:ctrlp_dont_split	ctrlp.txt	/*g:ctrlp_dont_split*
 g:ctrlp_dotfiles	ctrlp.txt	/*g:ctrlp_dotfiles*
 g:ctrlp_highlight_match	ctrlp.txt	/*g:ctrlp_highlight_match*
