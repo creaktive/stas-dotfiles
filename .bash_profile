@@ -8,7 +8,8 @@ if [ "$SHELL" == "/opt/local/bin/bash" ]; then
     #export PATH=/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
 fi
 
-export PATH=$HOME/bin:$PATH
+export NODE_PATH=$HOME/node_modules
+export PATH=$HOME/bin:$NODE_PATH/.bin:$PATH
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
