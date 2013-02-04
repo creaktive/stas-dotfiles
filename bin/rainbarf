@@ -1,42 +1,43 @@
 #!/usr/bin/perl
 use 5.008;
-use open q(:locale);
 use strict;
 use utf8;
 use warnings qw(all);
 
-use File::Spec::Functions;
-use Getopt::Long;
 use List::Util qw(max sum);
-use Pod::Usage;
 use Storable qw(lock_retrieve lock_store);
-use Term::ANSIColor;
 
 ## no critic (ProhibitBacktickOperators ProhibitComplexRegexes ProhibitInteractiveTest)
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 
 my @ticks = qw[▁ ▂ ▃ ▄ ▅ ▆ ▇ █];
+binmode \*STDOUT => q(encoding(utf8));
 
-my $tmux = not -t \*STDOUT;
-GetOptions(
-    q(help)     => \my $help,
-    q(battery!) => \my $show_battery,
-    q(bolt!)    => \my $bolt,
-    q(bg=s)     => \my $chart_bg,
-    q(fg=s)     => \my $chart_fg,
-    q(bright!)  => \my $bright,
-    q(max=i)    => \my $threshold,
-    q(tmux!)    => \$tmux,
-    q(width=i)  => \my $width,
-) or pod2usage(q(-verbose) => 1);
-pod2usage(q(-verbose) => 2) if $help;
-$show_battery = 1 unless defined $show_battery;
-$threshold = 1 unless defined $threshold;
-$width = 38 unless defined $width;
-$bright = 0 unless defined $bright;
-$bolt = (defined $bolt and $bolt) ? q(⚡) : q(|);
+my $order   = '';
+my $screen  = 0;
+my $tmux    = not -t \*STDOUT;
 
-my $history = catfile($ENV{HOME}, q(.rainbarf.dat));
+my ($help, $show_battery, $bolt, $chart_bg, $chart_fg, $bright, $threshold, $width);
+if (@ARGV) {
+    require Getopt::Long;
+    Getopt::Long::GetOptions(
+        q(help)     => \$help,
+        q(battery!) => \$show_battery,
+        q(bolt!)    => \$bolt,
+        q(bg=s)     => \$chart_bg,
+        q(fg=s)     => \$chart_fg,
+        q(bright!)  => \$bright,
+        q(max=i)    => \$threshold,
+        q(order=s)  => \$order,
+        q(screen)   => \$screen,
+        q(tmux!)    => \$tmux,
+        q(width=i)  => \$width,
+    ) or help(-verbose => 1);
+}
+
+defaults();
+
+my $history = qq($ENV{HOME}/.rainbarf.dat);
 
 my $chart = eval { lock_retrieve $history };
 $chart = [ (0) x $width ] unless defined $chart;
@@ -49,22 +50,31 @@ lock_store $chart => $history;
 
 unshift @$chart => (0) x ($width - @$chart);
 
-my %colors = qw(
-    f   green
-    w   red
-    c   red
-    a   yellow
-    i   blue
+# Ordering from Activity Monitor.app
+my %colors = (
+    f   => [ green  => 1 ], # free
+    w   => [ red    => 2 ], # wired
+    a   => [ yellow => 3 ], # active
+    i   => [ blue   => 4 ], # inactive
+    c   => [ cyan   => 5 ], # cached
 );
+
+# Custom ordering
+my @order = split //x => lc $order;
+for my $i (0 .. $#order) {
+    my $color = $order[$i];
+    $colors{$color}->[1] = $i + 1
+        if exists $colors{$color};
+}
 
 my %memory = memory();
 
 my $scale = @$chart / sum values %memory;
 my $norm = $#ticks / max @$chart => $threshold;
 my $c = 0;
-for my $type (sort keys %memory) {
+for my $type (sort { $colors{$a}->[1] <=> $colors{$b}->[1] } keys %memory) {
     print my_color(
-        map { defined $_ ? $_ : $colors{$type} }
+        map { defined $_ ? $_ : $colors{$type}->[0] }
         $chart_fg => $chart_bg
     );
 
@@ -77,19 +87,54 @@ print $ticks[$norm * $load[2]] if $c < $width;
 
 battery() if $show_battery;
 
-print color(q(reset)) => qq(\n) unless $tmux;
+if ($screen) {
+    print qq(\5{= dd});
+} elsif ($tmux) {
+} else {
+    print Term::ANSIColor::color(q(reset)) => qq(\n);
+}
+
+# For dependencies linting
+#printf qq(%-20s\t%s\n), $_ => $INC{$_} for sort keys %INC;
+
+sub help {
+    my (@args) = @_;
+    require Pod::Usage;
+    return Pod::Usage::pod2usage(-noperldoc => 1, @args);
+}
+
+sub defaults {
+    help(-verbose => 99) if $help;
+    $show_battery = 1 unless defined $show_battery;
+    $threshold = 1 unless defined $threshold;
+    $width = 38 unless defined $width;
+    $bright = 0 unless defined $bright;
+    $bolt = (defined $bolt and $bolt) ? q(⚡) : q(|);
+    require Term::ANSIColor if not $tmux and not $screen;
+
+    return;
+}
 
 sub my_color {
     my ($fg, $bg) = @_;
     my $out;
 
-    if ($tmux) {
+   if ($screen) {
+        $out = qq(\5{);
+        $out .= defined($bg)
+            ? chr ord $bg
+            : q(.);
+        $out .= $bright
+            ? uc chr ord $fg
+            : chr ord $fg;
+        $out .= q(});
+    } elsif ($tmux) {
         $fg .= q(,bright) if $bright;
         $out = qq(#[fg=$fg]);
         $out .= qq(#[bg=$bg]) if defined $bg;
     } else {
         $fg = qq(bright_$fg) if $bright;
-        $out = color defined($bg) ? qq($fg on_$bg) : $fg;
+        $out = Term::ANSIColor::color(defined($bg) ? qq($fg on_$bg) : $fg);
     }
 
     return $out;
@@ -130,19 +175,37 @@ sub memory {
 sub battery {
     my ($battery, $charging);
     if (-x q{/usr/sbin/ioreg}) {
-        my @battery = map {
-            /"(?:(?:Max|Current)Capacity|ExternalConnected)"\s*=\s*(\d+|Yes|No)/ix
-                ? $1
+        my %battery = map {
+            /"((?:Max|Current)Capacity|ExternalConnected)"\s*=\s*(\d+|Yes|No)/ix
+                ? (lc chr ord $1 => $2)
                 : ()
         } qx{/usr/sbin/ioreg -n AppleSmartBattery -r};
-        $charging = ($battery[2] =~ /^y/ix);
-        $battery = $battery[1] / $battery[0];
-    } elsif (
-        -x q{/usr/bin/acpi}
-        and qx{/usr/bin/acpi} =~ /^Battery\s+0:\s+(\w+),\s+(\d+)%/ix
-    ) {
-        $charging = $1 ne q{Discharging};
-        $battery = $2 / 100;
+
+        $charging = ($battery{e} =~ /^y/ix);
+        $battery = eval { $battery{c} / $battery{m} };
+    } elsif (-d q(/proc/acpi/battery)) {
+        my ($acpi_info, $acpi_state, %battery) = ('') x 2;
+        if (grep {
+                -d $_
+                and -e ($acpi_info  = qq($_/info))
+                and -e ($acpi_state = qq($_/state))
+            } sort glob q(/proc/acpi/battery/BAT[0-9])
+        ) {
+            for my $file ($acpi_info, $acpi_state) {
+                my $fh;
+                if (open $fh, q(<), $file) {
+                    while (<$fh>) {
+                        my ($key, $value) = /^([\w\s]+)\s*:\s*(\w+)/x;
+                        $key =~ y/A-Z /a-z_/;
+                        $battery{$key} = $value;
+                    }
+                }
+                close $fh;
+            }
+        }
+
+        $charging = $battery{charging_state} ne q(discharging);
+        $battery = eval { $battery{remaining_capacity} / $battery{last_full_capacity} };
     }
 
     if (defined $battery) {
@@ -165,11 +228,11 @@ __DATA__
 
 =head1 NAME
 
-rainbarf - CPU/RAM stats for TUI
+rainbarf - CPU/RAM stats chart for tmux & screen
 
 =head1 VERSION
 
-version 0.1
+version 0.2
 
 =head1 SYNOPSIS
 
@@ -184,11 +247,13 @@ The load history chart is tinted with the following colors to reflect the system
 
 =item * B<green>: free memory;
 
-=item * B<red>: wired memory on I<Mac OS X>, cached memory on I<Linux>;
-
 =item * B<yellow>: active memory;
 
-=item * B<blue>: inactive memory.
+=item * B<blue>: inactive memory;
+
+=item * B<red>: wired memory on I<Mac OS X>;
+
+=item * B<cyan>: cached memory on I<Linux>.
 
 =back
 
@@ -216,6 +281,7 @@ Reload the tmux config by running C<tmux source-file ~/.tmux.conf>.
 =item --help
 
 This.
+To see as a manpage, use C<perldoc ~/bin/rainbarf> (if you put C<rainbarf> in your F<~/bin>).
 
 =item --[no]battery
 
@@ -241,10 +307,19 @@ Force chart background color.
 
 Maximum load you expect before rescaling the chart. Default is 1.
 
+=item --order INDEXES
+
+Specify the memory usage bar order.
+The default is C<fwaic> (B<f>ree, B<w>ired, B<a>ctive, B<i>nactive & B<c>ached).
+
 =item --[no]tmux
 
 Force C<tmux> colors mode.
 By default, C<rainbarf> detects automatically if it is being called from C<tmux> or from the interactive shell.
+
+=item --screen
+
+L<screen(1)|http://manpages.ubuntu.com/manpages/hardy/man1/screen.1.html> colors mode. B<Experimental>. See L</CAVEAT>.
 
 =item --width NUMBER
 
@@ -284,6 +359,16 @@ Every C<rainbarf> execution will update and rotate that file.
 Since C<tmux> calls C<rainbarf> periodically (every 15 seconds, by default), the chart will display load for the last ~9.5 minutes (15 * 38).
 Thus, several C<tmux> instances running simultaneously for the same user will result in a faster chart scrolling.
 
+=head2 screen
+
+Stable C<screen> version unfortunately has a broken UTF-8 handling specifically for the status bar.
+Thus, I have only tested the C<rainbarf> with the variant from L<git://git.savannah.gnu.org/screen.git>.
+My F<~/.screenrc> contents:
+
+ backtick 1 15 15 rainbarf --bright --screen
+ hardstatus string "%1`"
+ hardstatus lastline
+
 =head1 REFERENCES
 
 =over 4
@@ -302,7 +387,7 @@ L<ioreg(8)|http://developer.apple.com/library/mac/documentation/Darwin/Reference
 
 =item *
 
-L<acpi(1)|http://manpages.ubuntu.com/manpages/precise/man1/acpi.1.html> is used to get the battery status on I<Linux>.
+L<ACPI|http://www.tldp.org/howto/acpi-howto/usingacpi.html> is used to get the battery status on I<Linux>.
 
 =item *
 
