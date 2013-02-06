@@ -26,8 +26,8 @@ servers = (
   {
     address = "irc.perl.org";
     chatnet = "Perl";
-    port = "6667";
-    use_ssl = "no";
+    port = "7062";
+    use_ssl = "yes";
     ssl_verify = "no";
     autoconnect = "yes";
   }
@@ -102,8 +102,9 @@ chatnets = {
 channels = (
   { name = "#irssi"; chatnet = "ircnet"; autojoin = "No"; },
   { name = "silc"; chatnet = "silc"; autojoin = "No"; },
+  { name = "#sao-paulo.pm"; chatnet = "Perl"; autojoin = "yes"; },
   { name = "#rio-pm"; chatnet = "Perl"; autojoin = "yes"; },
-  { name = "#sao-paulo.pm"; chatnet = "Perl"; autojoin = "yes"; }
+  { name = "#brasil-pm"; chatnet = "Perl"; autojoin = "yes"; }
 );
 
 aliases = {
@@ -286,3 +287,8 @@ hilights = (
   { text = "creaktive"; color = "%M"; nick = "yes"; word = "yes"; }
 );
 logs = { };
+windows = { 1 = { }; 2 = { name = "hilight"; sticky = "yes"; }; };
+mainwindows = {
+  1 = { first_line = "12"; lines = "58"; };
+  2 = { first_line = "1"; lines = "11"; };
+};
