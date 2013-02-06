@@ -271,7 +271,7 @@ statusbar = {
 settings = {
   core = {
     real_name = "Stanislaw Pusep";
-    user_name = "crawler";
+    user_name = "creaktive";
     nick = "creaktive";
   };
   "fe-text" = { actlist_sort = "refnum"; };
