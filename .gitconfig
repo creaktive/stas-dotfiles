@@ -20,3 +20,7 @@
     whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
 [push]
     default = matching
+
+# https://twitter.com/franckcuny/status/299653957641441280
+[url "ssh://git@github.com/"]
+    insteadOf = "gh:"
