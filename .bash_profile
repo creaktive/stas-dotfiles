@@ -9,7 +9,7 @@ if [ "$SHELL" == "/opt/local/bin/bash" ]; then
 fi
 
 export NODE_PATH=$HOME/node_modules
-export PATH=$HOME/bin:$NODE_PATH/.bin:$PATH
+export PATH=$HOME/.vim/bin:$HOME/bin:$NODE_PATH/.bin:$PATH
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
