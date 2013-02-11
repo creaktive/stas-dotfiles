@@ -43,7 +43,9 @@ set showmatch
 set incsearch
 set ignorecase
 
-filetype plugin indent on
+filetype on
+filetype plugin on
+filetype indent on
 
 " let g:perl_compiler_force_warnings = 0
 let perl_fold=1
@@ -107,7 +109,7 @@ vmap <S-Tab> <gv
 "nmap <Tab> I<tab><esc>
 "nmap <S-Tab> ^i<bs><esc>
 
-let g:SuperTabDefaultCompletionType = "context"
+"let g:SuperTabDefaultCompletionType = "context"
 let g:manpageview_multimanpage = 0
 
 " Ctrl-r searches for selected text
