@@ -81,7 +81,7 @@ reverse_files_only=1
 copymove_persistent_attr=1
 select_flags=6
 editor_backup_extension=~
-skin=default
+skin=solarized
 keymap=mc.keymap
 auto_save_setup_panels=1
 
@@ -128,6 +128,8 @@ clipboard_paste=
 base_color=
 xterm-256color=
 color_terminals=
+
+screen=
 
 [Panels]
 show_mini_info=true
