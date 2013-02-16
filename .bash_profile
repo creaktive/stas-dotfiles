@@ -22,9 +22,16 @@ export PERL_MM_USE_DEFAULT=1
 . $HOME/.bashrc
 
 export EDITOR=vim
-export HISTCONTROL=ignoreboth
-export HISTSIZE=32768
 export LESS=' -SIR '
+
+# http://unix.stackexchange.com/questions/1288/preserve-bash-history-in-multiple-terminal-windows
+export HISTCONTROL=ignoredups:erasedups # no duplicate entries
+export HISTSIZE=100000                  # big big history
+export HISTFILESIZE=100000              # big big history
+shopt -s histappend                     # append to history, don't overwrite it
+
+# Save and reload the history after each command finishes
+export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
 set -o vi
 shopt -s extglob
