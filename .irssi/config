@@ -30,6 +30,14 @@ servers = (
     use_ssl = "yes";
     ssl_verify = "no";
     autoconnect = "yes";
+  },
+  {
+    address = "irc.freenode.net";
+    chatnet = "Freenode";
+    port = "7000";
+    use_ssl = "yes";
+    ssl_verify = "no";
+    autoconnect = "yes";
   }
 );
 
@@ -97,6 +105,7 @@ chatnets = {
   };
   SILC = { type = "SILC"; };
   Perl = { type = "IRC"; };
+  Freenode = { type = "IRC"; };
 };
 
 channels = (
@@ -104,7 +113,8 @@ channels = (
   { name = "silc"; chatnet = "silc"; autojoin = "No"; },
   { name = "#sao-paulo.pm"; chatnet = "Perl"; autojoin = "yes"; },
   { name = "#rio-pm"; chatnet = "Perl"; autojoin = "yes"; },
-  { name = "#brasil-pm"; chatnet = "Perl"; autojoin = "yes"; }
+  { name = "#brasil-pm"; chatnet = "Perl"; autojoin = "yes"; },
+  { name = "#perl"; chatnet = "Freenode"; autojoin = "yes"; }
 );
 
 aliases = {
