@@ -5,10 +5,11 @@ set number
 set mouse=a
 set vb
 set t_Co=256
-set guifont=ProFont
+set guifont=Terminus\ Medium:h12
+set noantialias
 set guioptions-=T
-"colorscheme zenburn
 "let g:solarized_termcolors=256
+let g:solarized_italic=0
 colorscheme solarized
 set background=dark
 
