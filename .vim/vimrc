@@ -10,6 +10,7 @@ set noantialias
 set guioptions-=T
 "let g:solarized_termcolors=256
 let g:solarized_italic=0
+let g:Powerline_symbols='fancy'
 colorscheme solarized
 set background=dark
 
