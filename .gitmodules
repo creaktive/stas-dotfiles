@@ -4,3 +4,6 @@
 [submodule "stas-vim"]
     path = .vim
     url = git@github.com:creaktive/stas-vim.git
+[submodule "tmux-powerline"]
+    path = tmux-powerline
+    url = git@github.com:creaktive/tmux-powerline.git
