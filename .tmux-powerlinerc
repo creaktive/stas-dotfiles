@@ -106,11 +106,6 @@
 	export TMUX_POWERLINE_SEG_PWD_MAX_LEN="40"
 # }
 
-# rainbarf.sh {
-	# Custom parameters
-	export TMUX_POWERLINE_SEG_RAINBARF_PARAMS="--remaining"
-# }
-
 # time.sh {
 	# date(1) format for the time. Americans might want to have "%I:%M %p".
 	export TMUX_POWERLINE_SEG_TIME_FORMAT="%H:%M"
