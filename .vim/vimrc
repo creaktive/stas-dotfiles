@@ -36,7 +36,7 @@ set linebreak
 
 set foldenable
 set foldmethod=syntax
-set foldlevel=10
+set foldlevel=0
 
 set autoindent
 set smartindent
@@ -51,6 +51,7 @@ filetype indent on
 
 " let g:perl_compiler_force_warnings = 0
 let perl_fold=1
+let perl_nofold_packages=1
 let perl_extended_vars=1
 let perl_include_pod=1
 autocmd FileType perl :call SetupPerl()
