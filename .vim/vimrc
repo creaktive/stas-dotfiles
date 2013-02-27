@@ -14,15 +14,13 @@ let g:Powerline_symbols='fancy'
 colorscheme solarized
 set background=dark
 
+set cryptmethod=blowfish
+
 syntax on
 set hlsearch
 
 set wildmenu
 set cursorline
-"set statusline=%t%Y%R\ <%{&ff}
-"set statusline+=%{\"[\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\").\"]\"}
-"set statusline+=>\ {%4c,%4l}\ 0x\%02.2B\ %p%%\ (%L)
-"set statusline+=%{fugitive#statusline()}
 set laststatus=2
 
 set spell spelllang=pt,en
@@ -80,14 +78,10 @@ cnoreabbrev W w
 cnoreabbrev Q w
 
 " kill'em all!!!
-" noremap     <Up> ""
-" noremap!    <Up> <NOP>
-" noremap     <Down> ""
-" noremap!    <Down> <NOP>
-" noremap     <Left> ""
-" noremap!    <Left> <NOP>
-" noremap     <Right> ""
-" noremap!    <Right> <NOP>
+nnoremap    <Up> <NOP>
+nnoremap    <Down> <NOP>
+nnoremap    <Left> <NOP>
+nnoremap    <Right> <NOP>
 noremap     <Insert> ""
 noremap!    <Insert> <NOP>
 noremap     <Delete> ""
@@ -116,7 +110,7 @@ vmap <S-Tab> <gv
 let g:manpageview_multimanpage = 0
 
 " Ctrl-r searches for selected text
-vnoremap <C-r> "zy:%s/<C-r>z
+vnoremap <C-r> "zy:/<C-r>z
 
 " eregex
 nnoremap / :M/
@@ -137,6 +131,10 @@ set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,.
 "noremap <C-left> :bprev<CR>
 "noremap <C-right> :bnext<CR>
 "let g:buftabs_only_basename=1
+
+" tmux-alike splits
+map <C-w>- <C-w>s
+map <C-w>\| <C-w>v
 
 highlight clear SpellBad
 highlight SpellBad gui=undercurl guisp=#bc6c4c
