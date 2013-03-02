@@ -32,12 +32,23 @@ ZSH_THEME="agnoster"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(battery command-not-found cpanm debian dircycle git-remote-branch git github gnu-utils macports npm osx perl rsync vagrant)
+plugins=(battery cpanm debian dircycle encode64 git-remote-branch git github gnu-utils macports osx perl vagrant)
 
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
 eval $(dircolors $HOME/.dircolors)
 alias ls='ls --color=auto'
+unalias ag
+
+type gfind >/dev/null 2>&1
+if [ "$?" -eq 0 ]; then
+    alias find=gfind
+fi
+
+type gnutar >/dev/null 2>&1
+if [ "$?" -eq 0 ]; then
+    alias tar=gnutar
+fi
 
 export LESS=' -SIR '
