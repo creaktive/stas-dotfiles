@@ -32,7 +32,7 @@ ZSH_THEME="agnoster"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(battery cpanm debian dircycle encode64 git-remote-branch git github gnu-utils macports osx perl vagrant)
+plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git github gnu-utils macports osx perl vagrant)
 
 source $ZSH/oh-my-zsh.sh
 
