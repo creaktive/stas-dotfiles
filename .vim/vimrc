@@ -63,6 +63,9 @@ function! SetupPerl()
     vmap <F6> :!perltidy<CR>
 endfunction
 
+set runtimepath+=$HOME/.vim/vimerl
+autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
+
 set backup
 set backupdir=/tmp
 set dir=/tmp
