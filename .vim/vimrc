@@ -14,7 +14,7 @@ let g:Powerline_symbols='fancy'
 colorscheme solarized
 set background=dark
 
-set cryptmethod=blowfish
+" set cryptmethod=blowfish
 
 syntax on
 set hlsearch
