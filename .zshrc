@@ -52,3 +52,5 @@ if [ "$?" -eq 0 ]; then
 fi
 
 export LESS=' -SIR '
+export HISTSIZE=100000
+export SAVEHIST=100000
