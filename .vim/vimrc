@@ -148,6 +148,10 @@ highlight SpellLocal gui=undercurl guisp=#bc6c4c
 highlight clear SpellRare
 highlight SpellRare gui=undercurl guisp=#bc6c4c
 
+highlight clear SignColumn
+
+autocmd FocusLost * nested silent! wall
+
 autocmd BufReadPost *
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
