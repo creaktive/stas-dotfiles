@@ -11,6 +11,8 @@ set t_Co=256
 set guifont=Terminus\ Medium:h12
 set noantialias
 set guioptions-=T
+set guioptions-=L
+set guioptions-=r
 "let g:solarized_termcolors=256
 let g:solarized_italic=0
 let g:Powerline_symbols='fancy'
