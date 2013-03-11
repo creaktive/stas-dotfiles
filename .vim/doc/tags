@@ -304,6 +304,7 @@ coffee-script-license	coffee-script.txt	/*coffee-script-license*
 coffee-script-settings	coffee-script.txt	/*coffee-script-settings*
 coffee-script.txt	coffee-script.txt	/*coffee-script.txt*
 compiler-coffee-script	coffee-script.txt	/*compiler-coffee-script*
+cs	surround.txt	/*cs*
 ctrlp-changelog	ctrlp.txt	/*ctrlp-changelog*
 ctrlp-commands	ctrlp.txt	/*ctrlp-commands*
 ctrlp-contents	ctrlp.txt	/*ctrlp-contents*
@@ -316,6 +317,7 @@ ctrlp-mappings	ctrlp.txt	/*ctrlp-mappings*
 ctrlp-miscellaneous-configs	ctrlp.txt	/*ctrlp-miscellaneous-configs*
 ctrlp-options	ctrlp.txt	/*ctrlp-options*
 ctrlp.txt	ctrlp.txt	/*ctrlp.txt*
+ds	surround.txt	/*ds*
 easymotion	easymotion.txt	/*easymotion*
 easymotion-configuration	easymotion.txt	/*easymotion-configuration*
 easymotion-contents	easymotion.txt	/*easymotion-contents*
@@ -428,6 +430,8 @@ g:tagbar_sort	tagbar.txt	/*g:tagbar_sort*
 g:tagbar_systemenc	tagbar.txt	/*g:tagbar_systemenc*
 g:tagbar_updateonsave_maxlines	tagbar.txt	/*g:tagbar_updateonsave_maxlines*
 g:tagbar_width	tagbar.txt	/*g:tagbar_width*
+i_CTRL-G_S	surround.txt	/*i_CTRL-G_S*
+i_CTRL-G_s	surround.txt	/*i_CTRL-G_s*
 manpageview	manpageview.txt	/*manpageview*
 manpageview-K	manpageview.txt	/*manpageview-K*
 manpageview-contents	manpageview.txt	/*manpageview-contents*
@@ -459,6 +463,13 @@ solarized-options	solarized.txt	/*solarized-options*
 solarized-term	solarized.txt	/*solarized-term*
 solarized-togglebg	solarized.txt	/*solarized-togglebg*
 solarized.vim	solarized.txt	/*solarized.vim*
+surround	surround.txt	/*surround*
+surround-customizing	surround.txt	/*surround-customizing*
+surround-issues	surround.txt	/*surround-issues*
+surround-mappings	surround.txt	/*surround-mappings*
+surround-replacements	surround.txt	/*surround-replacements*
+surround-targets	surround.txt	/*surround-targets*
+surround.txt	surround.txt	/*surround.txt*
 tagbar	tagbar.txt	/*tagbar*
 tagbar-autoopen	tagbar.txt	/*tagbar-autoopen*
 tagbar-commands	tagbar.txt	/*tagbar-commands*
@@ -490,6 +501,7 @@ unimpaired-next	unimpaired.txt	/*unimpaired-next*
 unimpaired-todo	unimpaired.txt	/*unimpaired-todo*
 unimpaired.txt	unimpaired.txt	/*unimpaired.txt*
 urxvt	solarized.txt	/*urxvt*
+vS	surround.txt	/*vS*
 v_[Y	unimpaired.txt	/*v_[Y*
 v_[e	unimpaired.txt	/*v_[e*
 v_[u	unimpaired.txt	/*v_[u*
@@ -500,5 +512,10 @@ v_]e	unimpaired.txt	/*v_]e*
 v_]u	unimpaired.txt	/*v_]u*
 v_]x	unimpaired.txt	/*v_]x*
 v_]y	unimpaired.txt	/*v_]y*
+vgS	surround.txt	/*vgS*
 vim-colors-solarized	solarized.txt	/*vim-colors-solarized*
 without	solarized.txt	/*without*
+yS	surround.txt	/*yS*
+ySS	surround.txt	/*ySS*
+ys	surround.txt	/*ys*
+yss	surround.txt	/*yss*
