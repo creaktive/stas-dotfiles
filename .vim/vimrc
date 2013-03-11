@@ -1,5 +1,8 @@
 set nocompatible
-set backspace=indent,eol,start
+
+" Pathogen
+call pathogen#infect()
+call pathogen#helptags()
 
 set number
 set mouse=a
@@ -63,7 +66,6 @@ function! SetupPerl()
     vmap <F6> :!perltidy<CR>
 endfunction
 
-set runtimepath+=$HOME/.vim/vimerl
 autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
 
 set backup
@@ -123,7 +125,7 @@ nnoremap ,? /
 
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
-autocmd vimenter * NERDTree
+" autocmd vimenter * NERDTree
 let NERDTreeShowBookmarks=1
 let NERDTreeChDirMode=0
 let NERDTreeQuitOnOpen=0
