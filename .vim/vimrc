@@ -118,10 +118,7 @@ let g:manpageview_multimanpage = 0
 vnoremap <C-r> "zy:/<C-r>z
 
 " eregex
-nnoremap / :M/
-nnoremap ? :M?
-nnoremap ,/ /
-nnoremap ,? /
+nnoremap <leader>/ :call eregex#toggle()<CR>
 
 map <F5> :make<CR>
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
