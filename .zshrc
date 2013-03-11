@@ -37,6 +37,9 @@ plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git gi
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
+alias mvim='mvim --remote'
+alias gvim=mvim
+
 eval $(dircolors $HOME/.dircolors)
 alias ls='ls --color=auto'
 unalias ag
