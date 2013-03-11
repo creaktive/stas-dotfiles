@@ -37,6 +37,9 @@ plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git gi
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
+bindkey '\e[A' history-beginning-search-backward
+bindkey '\e[B' history-beginning-search-forward
+
 alias mvim='mvim --remote'
 alias gvim=mvim
 
