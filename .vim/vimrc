@@ -52,6 +52,8 @@ filetype on
 filetype plugin on
 filetype indent on
 
+let g:ctrlp_user_command = ['.git', 'cd %s && git ls-files . -co --exclude-standard', 'find %s -maxdepth 4 -type f -size +0c']
+
 " let g:perl_compiler_force_warnings = 0
 let perl_fold=1
 let perl_nofold_packages=1
