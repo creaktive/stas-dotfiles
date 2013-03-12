@@ -32,15 +32,12 @@ ZSH_THEME="agnoster"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git github gnu-utils macports osx perl vagrant)
+plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git github gnu-utils history-substring-search macports osx perl vagrant)
 
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-bindkey '\e[A' history-beginning-search-backward
-bindkey '\e[B' history-beginning-search-forward
-
-alias mvim='mvim --remote'
+mvim() { if [ "$*" ]; then /opt/local/bin/mvim --remote $*; else /opt/local/bin/mvim --remote .; fi }
 alias gvim=mvim
 
 eval $(dircolors $HOME/.dircolors)
