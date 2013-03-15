@@ -148,7 +148,8 @@ set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,.
 "noremap <C-right> :bnext<CR>
 "let g:buftabs_only_basename=1
 
-" tmux-alike splits
+" tmux-alike
+map <C-a> <C-w>
 map <C-w>- <C-w>s
 map <C-w>\| <C-w>v
 
