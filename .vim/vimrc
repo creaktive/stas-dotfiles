@@ -73,8 +73,14 @@ endfunction
 autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
 
 set backup
-set backupdir=/tmp
-set dir=/tmp
+set backupdir=~/tmp,/tmp
+set dir=~/tmp,/tmp
+if has("persistent_undo")
+    set undodir=~/tmp,/tmp
+    set undofile
+endif
+
+nnoremap <F3> :UndotreeToggle<cr>
 
 "set grepprg=ack\ -a
 
