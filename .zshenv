@@ -4,6 +4,7 @@ export LANG=en_US.UTF-8
 if [ "$SHELL" = "/opt/local/bin/zsh" ]; then
     export PATH=/opt/local/bin:/opt/local/sbin:$PATH
     export PATH=/opt/local/lib/postgresql92/bin:$PATH
+    export PATH=/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
 fi
 
 export NODE_PATH=$HOME/node_modules
