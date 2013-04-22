@@ -71,6 +71,7 @@ function! SetupPerl()
 endfunction
 
 autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
+autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx
 
 set backup
 set backupdir=~/tmp,/tmp
