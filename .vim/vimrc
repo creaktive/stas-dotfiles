@@ -93,6 +93,9 @@ cnoreabbrev E e
 cnoreabbrev W w
 cnoreabbrev Q w
 
+" overwrite protected files (https://coderwall.com/p/xp9kjw)
+cmap w!! %!sudo tee > /dev/null %
+
 " kill'em all!!!
 nnoremap    <Up> <NOP>
 nnoremap    <Down> <NOP>
