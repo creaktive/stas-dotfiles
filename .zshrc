@@ -32,7 +32,7 @@ ZSH_THEME="agnoster"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(battery cpanm debian dircycle encode64 extract git-remote-branch git github gnu-utils history-substring-search macports osx perl vagrant)
+plugins=(dircycle git gnu-utils history-substring-search macports zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -42,7 +42,7 @@ alias gvim=mvim
 
 eval $(dircolors $HOME/.dircolors)
 alias ls='ls --color=auto'
-unalias ag
+#unalias ag
 
 type gfind >/dev/null 2>&1
 if [ "$?" -eq 0 ]; then
@@ -57,3 +57,10 @@ fi
 export LESS=' -SIR '
 export HISTSIZE=100000
 export SAVEHIST=100000
+
+## smart urls
+autoload -U url-quote-magic
+zle -N self-insert url-quote-magic
+
+autoload -U zcalc
+autoload -U zed
