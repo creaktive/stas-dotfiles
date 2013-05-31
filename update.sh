@@ -15,4 +15,5 @@ git pull
 echo "\n\t* perl"
 cd ~
 perlbrew self-upgrade 2>/dev/null
-cpan-outdated | cpan-tested | cpant
+cpan-outdated | cpanm
+cpanm-reporter
