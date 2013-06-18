@@ -1,4 +1,5 @@
 servers = (
+  { address = "localhost"; chatnet = "BitlBee"; port = "6667"; },
   { address = "eu.irc6.net"; chatnet = "IRCnet"; port = "6667"; },
   { address = "open.ircnet.net"; chatnet = "IRCnet"; port = "6667"; },
   { address = "irc.efnet.org"; chatnet = "EFNet"; port = "6667"; },
@@ -29,7 +30,7 @@ servers = (
     port = "7062";
     use_ssl = "yes";
     ssl_verify = "no";
-    autoconnect = "yes";
+    autoconnect = "no";
   },
   {
     address = "irc.freenode.net";
@@ -37,7 +38,7 @@ servers = (
     port = "7000";
     use_ssl = "yes";
     ssl_verify = "no";
-    autoconnect = "yes";
+    autoconnect = "no";
   }
 );
 
@@ -106,15 +107,21 @@ chatnets = {
   SILC = { type = "SILC"; };
   Perl = { type = "IRC"; };
   Freenode = { type = "IRC"; };
+  BitlBee = {
+    type = "IRC";
+    nick = "stanislavpoussep";
+    username = "spoussep";
+    realname = "Stanislav Poussep";
+  };
 };
 
 channels = (
   { name = "#irssi"; chatnet = "ircnet"; autojoin = "No"; },
   { name = "silc"; chatnet = "silc"; autojoin = "No"; },
-  { name = "#sao-paulo.pm"; chatnet = "Perl"; autojoin = "yes"; },
-  { name = "#rio-pm"; chatnet = "Perl"; autojoin = "yes"; },
-  { name = "#brasil-pm"; chatnet = "Perl"; autojoin = "yes"; },
-  { name = "#perl"; chatnet = "Freenode"; autojoin = "yes"; }
+  { name = "#sao-paulo.pm"; chatnet = "Perl"; autojoin = "No"; },
+  { name = "#rio-pm"; chatnet = "Perl"; autojoin = "No"; },
+  { name = "#brasil-pm"; chatnet = "Perl"; autojoin = "No"; },
+  { name = "#perl"; chatnet = "Freenode"; autojoin = "No"; }
 );
 
 aliases = {
@@ -302,7 +309,13 @@ settings = {
   };
 };
 hilights = (
-  { text = "creaktive"; color = "%M"; nick = "yes"; word = "yes"; }
+  { text = "creaktive"; color = "%M"; nick = "yes"; word = "yes"; },
+  { 
+    text = "stanislavpoussep";
+    color = "%M";
+    nick = "yes";
+    word = "yes";
+  }
 );
 logs = { };
 windows = { 1 = { }; 2 = { name = "hilight"; sticky = "yes"; }; };
