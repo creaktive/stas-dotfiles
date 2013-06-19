@@ -5,6 +5,8 @@ if [ "$SHELL" = "/opt/local/bin/zsh" ]; then
     export PATH=/opt/local/bin:/opt/local/sbin:$PATH
     export PATH=/opt/local/lib/postgresql92/bin:$PATH
     export PATH=/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
+    export no_proxy=localhost
+    `$HOME/bin/setproxy`
 fi
 
 export NODE_PATH=$HOME/node_modules
