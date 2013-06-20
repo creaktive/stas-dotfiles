@@ -15,7 +15,7 @@
     changed = yellow
     untracked = red
 [alias]
-	unstage = reset HEAD
+    unstage = reset HEAD
 [core]
     excludesfile = $HOME/.gitignore
     pager = less -FRSX
