@@ -22,6 +22,7 @@ set background=dark
 " set cryptmethod=blowfish
 
 syntax on
+set synmaxcol=200
 set hlsearch
 
 set wildmenu
