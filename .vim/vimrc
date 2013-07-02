@@ -151,8 +151,8 @@ nnoremap <silent> <F8> :TagbarToggle<CR>
 "let Tlist_Auto_Open=1
 let Tlist_Use_Right_Window=1
 
-set autochdir
-set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,./../../../../../tags
+"set autochdir
+set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,./../../../../../tags,./../../../../../../tags
 
 "nnoremap <C-down> :BufExplorer<CR>
 "noremap <C-left> :bprev<CR>
@@ -163,6 +163,7 @@ set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,.
 map <C-a> <C-w>
 map <C-w>- <C-w>s
 map <C-w>\| <C-w>v
+map <C-w>; <C-w>p
 
 highlight clear SpellBad
 highlight SpellBad gui=undercurl guisp=#bc6c4c
