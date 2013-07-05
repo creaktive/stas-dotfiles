@@ -163,7 +163,7 @@ set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,.
 map <C-a> <C-w>
 map <C-w>- <C-w>s
 map <C-w>\| <C-w>v
-map <C-w>; <C-w>p
+map <C-w>; <C-\>
 
 highlight clear SpellBad
 highlight SpellBad gui=undercurl guisp=#bc6c4c
