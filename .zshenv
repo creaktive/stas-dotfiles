@@ -5,9 +5,15 @@ if [ "$SHELL" = "/opt/local/bin/zsh" ]; then
     export PATH=/opt/local/bin:/opt/local/sbin:$PATH
     export PATH=/opt/local/lib/postgresql92/bin:$PATH
     export PATH=/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
-    `$HOME/bin/setproxy`
-    export no_proxy=localhost
-    export rsync_proxy=$http_proxy
+
+    TRAPALRM () {
+        `$HOME/bin/setproxy`
+        export no_proxy=localhost
+        export rsync_proxy=$http_proxy
+    }
+
+    TMOUT=60
+    TRAPALRM
 fi
 
 export NODE_PATH=$HOME/node_modules
