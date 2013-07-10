@@ -74,6 +74,11 @@ if [ -z "$TMUX" ]; then
     fi
 fi
 
+if [ -x /usr/local/bin/booking-perl ]; then
+    prompt_git(){}
+    export GIT_NO_TIMING=1
+fi
+
 function rtmux {
     case "$2" in
         "") autossh -M 0 $1 -t "if tmux -qu has; then tmux -qu attach; else tmux -qu new; fi";;
