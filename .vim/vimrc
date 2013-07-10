@@ -122,6 +122,16 @@ cmap w!! %!sudo tee > /dev/null %
 vmap <Tab> >gv
 vmap <S-Tab> <gv
 
+" Surround text currently selected while in visual mode
+" (The surrounded text is kept selected after being surround)
+vmap <leader>" S"lvi"
+vmap <leader>' S'lvi'
+vmap <leader>` S`lvi`
+vmap <leader>( S)lvi(
+vmap <leader>{ S}lvi{
+vmap <leader>[ S]lvi[
+vmap <leader>< S>lvi<
+
 " make tab in normal mode ident code
 "nmap <Tab> I<tab><esc>
 "nmap <S-Tab> ^i<bs><esc>
