@@ -66,6 +66,7 @@ function! SetupPerl()
     setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
     setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
     setlocal path+=.,..,../..,../../..,lib
+    setlocal complete=.,w,b,u,t
 
     map <F6> :%!perltidy<CR>
     vmap <F6> :!perltidy<CR>
