@@ -128,10 +128,16 @@ vmap <S-Tab> <gv
 vmap <leader>" S"lvi"
 vmap <leader>' S'lvi'
 vmap <leader>` S`lvi`
-vmap <leader>( S)lvi(
-vmap <leader>{ S}lvi{
-vmap <leader>[ S]lvi[
-vmap <leader>< S>lvi<
+vmap <leader>< S<
+" no space
+vmap <leader>) S)lvi(
+vmap <leader>} S}lvi{
+vmap <leader>] S]lvi[
+vmap <leader>> S>lvi<
+" with space
+vmap <leader>( S(lvi(
+vmap <leader>{ S{lvi{
+vmap <leader>[ S[lvi[
 
 " make tab in normal mode ident code
 "nmap <Tab> I<tab><esc>
