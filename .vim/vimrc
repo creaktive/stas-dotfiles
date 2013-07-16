@@ -178,8 +178,8 @@ set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,.
 
 " tmux-alike
 map <C-a> <C-w>
-map <C-w>- <C-w>s
-map <C-w>\| <C-w>v
+map <C-w>- :new<CR>
+map <C-w>\| :vnew<CR>
 map <C-w>; <C-\>
 
 highlight clear SpellBad
