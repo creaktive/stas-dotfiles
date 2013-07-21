@@ -19,6 +19,17 @@ let g:Powerline_symbols='fancy'
 colorscheme solarized
 set background=dark
 
+
+let g:airline_theme='solarized'
+" old vim-powerline symbols
+let g:airline_left_sep = '⮀'
+let g:airline_left_alt_sep = '⮁'
+let g:airline_right_sep = '⮂'
+let g:airline_right_alt_sep = '⮃'
+let g:airline_fugitive_prefix = '⭠'
+let g:airline_readonly_symbol = '⭤'
+let g:airline_linecolumn_prefix = '⭡'
+
 " set cryptmethod=blowfish
 
 syntax on
