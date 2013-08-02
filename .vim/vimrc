@@ -51,7 +51,7 @@ set linebreak
 
 set foldenable
 set foldmethod=syntax
-" set foldlevel=0
+set foldlevel=10
 
 set autoindent
 set smartindent
