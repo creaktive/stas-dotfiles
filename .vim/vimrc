@@ -18,7 +18,7 @@ let g:solarized_italic=0
 let g:Powerline_symbols='fancy'
 colorscheme solarized
 set background=dark
-
+set backspace=indent,eol,start
 
 let g:airline_theme='solarized'
 " old vim-powerline symbols
@@ -30,6 +30,8 @@ let g:airline_branch_prefix = '⭠'
 let g:airline_readonly_symbol = '⭤'
 let g:airline_linecolumn_prefix = '⭡'
 
+let g:bufferline_echo = 0
+let g:bufferline_rotate = 3
 " set cryptmethod=blowfish
 
 syntax on
