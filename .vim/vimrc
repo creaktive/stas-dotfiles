@@ -20,6 +20,8 @@ colorscheme solarized
 set background=dark
 set backspace=indent,eol,start
 
+let g:airline#extensions#whitespace#enabled = 0
+
 let g:airline_theme='solarized'
 " old vim-powerline symbols
 let g:airline_left_sep = '⮀'
