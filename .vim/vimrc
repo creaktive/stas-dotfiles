@@ -32,8 +32,6 @@ let g:airline_branch_prefix = '⭠'
 let g:airline_readonly_symbol = '⭤'
 let g:airline_linecolumn_prefix = '⭡'
 
-let g:bufferline_echo = 0
-let g:bufferline_rotate = 3
 " set cryptmethod=blowfish
 
 syntax on
