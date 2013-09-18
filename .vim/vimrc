@@ -62,6 +62,9 @@ set showmatch
 set incsearch
 set ignorecase
 
+set showcmd
+set whichwrap+=<,>,h,l,[,]
+
 filetype on
 filetype plugin on
 filetype indent on
