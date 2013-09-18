@@ -27,9 +27,6 @@
 	path = bundle/tagbar
 	url = https://github.com/majutsushi/tagbar.git
     ignore = dirty
-[submodule "bundle/vim-coffee-script"]
-	path = bundle/vim-coffee-script
-	url = https://github.com/kchmck/vim-coffee-script.git
 [submodule "bundle/vim-colors-solarized"]
 	path = bundle/vim-colors-solarized
 	url = https://github.com/altercation/vim-colors-solarized.git
@@ -42,21 +39,12 @@
 [submodule "bundle/vim-gitgutter"]
 	path = bundle/vim-gitgutter
 	url = https://github.com/airblade/vim-gitgutter.git
-[submodule "bundle/vim-javascript"]
-	path = bundle/vim-javascript
-	url = https://github.com/pangloss/vim-javascript.git
 [submodule "bundle/vim-surround"]
 	path = bundle/vim-surround
 	url = https://github.com/tpope/vim-surround.git
 [submodule "bundle/vim-unimpaired"]
 	path = bundle/vim-unimpaired
 	url = https://github.com/tpope/vim-unimpaired.git
-[submodule "bundle/vimerl"]
-	path = bundle/vimerl
-	url = https://github.com/jimenezrick/vimerl.git
-[submodule "bundle/vim-perl"]
-	path = bundle/vim-perl
-	url = https://github.com/vim-perl/vim-perl.git
 [submodule "bundle/tcomment_vim"]
 	path = bundle/tcomment_vim
 	url = https://github.com/tomtom/tcomment_vim.git
@@ -64,9 +52,6 @@
 	path = bundle/undotree
 	url = https://github.com/mbbill/undotree.git
     ignore = dirty
-[submodule "bundle/nginx.vim"]
-	path = bundle/nginx.vim
-	url = https://github.com/vim-scripts/nginx.vim.git
 [submodule "bundle/vim-tmux-navigator"]
 	path = bundle/vim-tmux-navigator
 	url = https://github.com/christoomey/vim-tmux-navigator.git
@@ -76,3 +61,6 @@
 [submodule "bundle/command-t"]
 	path = bundle/command-t
 	url = https://github.com/wincent/Command-T.git
+[submodule "bundle/vim-polyglot"]
+	path = bundle/vim-polyglot
+	url = https://github.com/sheerun/vim-polyglot.git
