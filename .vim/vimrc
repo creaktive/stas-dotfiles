@@ -181,6 +181,7 @@ let NERDTreeKeepTreeInNewTab=1
 let g:nerdtree_tabs_open_on_gui_startup=0
 
 nnoremap <silent> <F8> :TagbarToggle<CR>
+let g:tagbar_autofocus = 1
 "let Tlist_Auto_Open=1
 let Tlist_Use_Right_Window=1
 
