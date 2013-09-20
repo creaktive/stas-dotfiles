@@ -184,6 +184,14 @@ nnoremap <silent> <F8> :TagbarToggle<CR>
 let g:tagbar_autofocus = 1
 "let Tlist_Auto_Open=1
 let Tlist_Use_Right_Window=1
+let g:tagbar_type_perl = {
+    \ 'kinds' : [
+        \ 'p:packages:1:0',
+        \ 'c:constants:0:0',
+        \ 'f:formats:0:0',
+        \ 's:subroutines',
+    \ ],
+\ }
 
 "set autochdir
 set tags=tags,./tags,./../tags,./../../tags,./../../../tags,./../../../../tags,./../../../../../tags,./../../../../../../tags
