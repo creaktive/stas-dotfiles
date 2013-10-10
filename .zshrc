@@ -32,7 +32,7 @@ ZSH_THEME="agnoster"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(dircycle git gnu-utils history-substring-search macports zsh-syntax-highlighting)
+plugins=(vi-mode dircycle git gnu-utils macports history-substring-search zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -57,6 +57,7 @@ fi
 export LESS=' -SIR '
 export HISTSIZE=100000
 export SAVEHIST=100000
+export KEYTIMEOUT=1
 
 ## smart urls
 autoload -U url-quote-magic
@@ -64,6 +65,12 @@ zle -N self-insert url-quote-magic
 
 autoload -U zcalc
 autoload -U zed
+
+bindkey ' '     magic-space
+bindkey '^w'    backward-kill-word
+bindkey '^r'    history-incremental-search-backward
+bindkey '^[.'   insert-last-word
+bindkey -s '^[l' "ls\n"
 
 if [ -z "$TMUX" ]; then
     if [ ! -z "$SSH_TTY" ]; then
