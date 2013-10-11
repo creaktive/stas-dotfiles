@@ -70,6 +70,11 @@ bindkey ' '     magic-space
 bindkey '^w'    backward-kill-word
 bindkey '^r'    history-incremental-search-backward
 bindkey '^[.'   insert-last-word
+bindkey '^[[1~' beginning-of-line
+bindkey '^[[3~' delete-char
+bindkey '^[[4~' end-of-line
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
 bindkey -s '^[l' "ls\n"
 
 if [ -z "$TMUX" ]; then
