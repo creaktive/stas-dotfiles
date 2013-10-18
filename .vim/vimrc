@@ -20,6 +20,22 @@ colorscheme solarized
 set background=dark
 set backspace=indent,eol,start
 
+" Display indentation guides
+set list
+set listchars=tab:¦\-,trail:·,extends:»,precedes:«,nbsp:×
+
+" Delete trailing white space
+func! DeleteTrailingWS()
+    exe "normal mz"
+    %s/\s\+$//ge
+    exe "normal `z"
+endfunc
+
+" Automatically delete training white space on save
+autocmd BufWrite *.pl :call DeleteTrailingWS()
+autocmd BufWrite *.py :call DeleteTrailingWS()
+autocmd BufWrite *.coffee :call DeleteTrailingWS()
+
 let g:airline#extensions#whitespace#enabled = 0
 
 let g:airline_theme='solarized'
@@ -61,7 +77,8 @@ set smartindent
 
 set showmatch
 set incsearch
-set ignorecase
+" set ignorecase
+set smartcase
 
 set showcmd
 set whichwrap+=<,>,h,l,[,]
