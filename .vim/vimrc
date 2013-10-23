@@ -33,6 +33,7 @@ endfunc
 
 " Automatically delete training white space on save
 autocmd BufWrite *.pl :call DeleteTrailingWS()
+autocmd BufWrite *.pm :call DeleteTrailingWS()
 autocmd BufWrite *.py :call DeleteTrailingWS()
 autocmd BufWrite *.coffee :call DeleteTrailingWS()
 
