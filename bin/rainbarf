@@ -8,7 +8,7 @@ use List::Util qw(max sum);
 use Storable qw(lock_retrieve lock_store);
 
 ## no critic (ProhibitBacktickOperators ProhibitComplexRegexes ProhibitInteractiveTest)
-our $VERSION = 0.9;
+our $VERSION = q(1.1);
 
 my %rgb = (
     black   => [qw[0 0 0]],
@@ -29,8 +29,8 @@ my $screen  = 0;
 my $tmux    = not -t \*STDOUT;
 my $rgb     = 0;
 
-my ($help, $show_battery, $remaining, $bolt, $chart_bg,
-    $chart_fg, $bright, $loadavg, $threshold, $width);
+my ($help, $show_battery, $remaining, $bolt, $chart_bg, $chart_fg,
+    $bright, $loadavg, $swap, $threshold, $width, $history);
 
 # parse the options file
 my $rcname = exists($ENV{RAINBARF})
@@ -58,18 +58,18 @@ if (@ARGV) {
         q(fg=s)         => \$chart_fg,
         q(bright!)      => \$bright,
         q(loadavg!)     => \$loadavg,
+        q(swap!)        => \$swap,
         q(max=i)        => \$threshold,
         q(order=s)      => \$order,
         q(screen)       => \$screen,
         q(tmux!)        => \$tmux,
         q(rgb!)         => \$rgb,
         q(width=i)      => \$width,
+        q(datfile=s)    => \$history,
     ) or help(-verbose => 1);
 }
 
 defaults();
-
-my $history = qq($ENV{HOME}/.rainbarf.dat);
 
 my $chart = eval { lock_retrieve $history };
 $chart = [ (0) x $width ] unless defined $chart;
@@ -91,6 +91,7 @@ my %colors = (
     i   => [ blue   => 4 ], # inactive
     c   => [ cyan   => 5 ], # cached
     b   => [ cyan   => 5 ], # buf (FreeBSD)
+    x   => [ magenta=> 6 ], # swap
 );
 
 # Custom ordering
@@ -102,6 +103,7 @@ for my $i (0 .. $#order) {
 }
 
 my %memory = memory();
+delete $memory{x} unless $swap;
 
 my $scale = @$chart / sum values %memory;
 my $norm = $#ticks / max @$chart => $threshold;
@@ -135,12 +137,16 @@ sub defaults {
     help(-verbose => 99)    if $help;
     $show_battery   = 1     unless defined $show_battery;
     $loadavg        = 0     unless defined $loadavg;
+    $swap           = 0     unless defined $swap;
     $threshold      = 1     unless defined $threshold;
     $width          = 38    unless defined $width;
     $bright         = 0     unless defined $bright;
     $remaining      = 0     unless defined $remaining;
     $bolt           = (defined $bolt and $bolt) ? chr 0x26a1 : q(|);
     require Term::ANSIColor if not $tmux and not $screen;
+
+    $history        = qq($ENV{HOME}/.rainbarf.dat)
+                            unless defined $history;
 
     return;
 }
@@ -225,7 +231,7 @@ sub top {
     if (not %top and -x q{/usr/bin/top}) {
         my @top;
         if ($^O eq q(darwin)) {
-            @top = qx{/usr/bin/top -R -F -l1 -n0 -s0};
+            @top = qx{/usr/bin/top -R -F -l1 -n0 -s0 -S};
         } elsif ($^O eq q(freebsd)) {
             @top = qx{/usr/bin/top -b -d2 -I -s1 -z};
         }
@@ -296,8 +302,8 @@ sub usage {
 
 sub memory {
     my %m;
-    if (exists $top{physmem}) {
-        my %n = (K => 1/2**10, M => 1, G => 2**10);
+    my %n = (K => 1/2**10, M => 1, G => 2**10);
+    if (exists $top{physmem} and $top{physmem} !~ /\bunused\b/ix) {
         %m =
             map { lc $_->[2] => $_->[0] * $n{$_->[1]} }
             map { [(/(\d+)([KMG])\s+(\w)/x)] }
@@ -305,14 +311,18 @@ sub memory {
         delete $m{u};
     } elsif (open my $meminfo, q{<}, q{/proc/meminfo}) {
         %m = map {
-            /\b(?:Mem)?(Free|Cached|SwapCached|Active|Inactive|Total):\s*(\d+)/ix
-                ? (lc chr ord $1 => $2)
-                : ();
+            /\b(Mem|Swap)?(Free|Cached|Active|Inactive|Total):\s*(\d+)/ix
+                ? (($1 and $1 eq q(Swap))
+                    ? (q(s) . lc chr ord $2 => $3)
+                    : (       lc chr ord $2 => $3)
+                ) : ();
         } <$meminfo>;
-        $m{c} -= delete $m{s};
-        delete $m{c} if $m{c} < 0;
-        $m{w} = delete($m{t}) - sum values %m;
         close $meminfo;
+        $m{c} -= delete $m{sc};
+        delete $m{c} if $m{c} < 0;
+        my $x = delete($m{st}) - delete($m{sf});
+        $m{w} = delete($m{t}) - sum values %m;
+        $m{x} = $x;
     } elsif (-x q{/usr/bin/vm_stat}) {
         # fallback
         %m = map {
@@ -321,6 +331,9 @@ sub memory {
                 : ();
         } qx{/usr/bin/vm_stat};
         $m{f} += delete $m{s};
+    }
+    if ($top{swap} and $top{swap} =~ /(\d+)([KMG])\s+(?:\+|Used,?)/ix) {
+        $m{x} = $1 * $n{$2};
     }
     return %m;
 }
@@ -368,6 +381,36 @@ sub battery {
                 and defined $battery{present_rate}
                 and $battery{present_rate} =~ /^\d+$/x;
             $battery = eval { $battery{remaining_capacity} / $battery{last_full_capacity} };
+        }
+    } elsif (-d q(/sys/class/power_supply)) {
+        my ($uevent, %battery) = ('');
+        if (grep {
+                -d $_
+                and ( ( -e qq($_/energy_full) and -e qq($_/energy_now) ) or
+                      ( -e qq($_/charge_now) and -e qq($_/current_now) ) )
+                and -e ($uevent = qq($_/uevent))
+            } sort glob q(/sys/class/power_supply/BAT[0-9])
+        ) {
+            my $fh;
+            if (open $fh, q(<), $uevent) {
+                while (<$fh>) {
+                    my ($key, $value) = /^POWER_SUPPLY_([^=]+)=(.*)$/x;
+                    next unless defined $key;
+                    $key =~ y/A-Z/a-z/;
+                    $battery{$key} = $value;
+                }
+            }
+            close $fh;
+
+            $charging = $battery{status} ne q(Discharging);
+            if (not $charging) {
+                if (defined $battery{power_now} and $battery{power_now} =~ /^\d+$/x) {
+                    $time = eval { ($battery{energy_now} * 60 / $battery{power_now}) }
+                } elsif (defined $battery{charge_now} and $battery{charge_now} =~ /^\d+$/x) {
+                    $time = eval { (60 * ($battery{charge_now} / 1000) / ($battery{current_now} / 1000)) }
+                }
+            }
+            $battery = $battery{capacity} / 100;
         }
     }
 
@@ -424,7 +467,7 @@ rainbarf - CPU/RAM/battery stats chart bar for tmux (and GNU screen)
 
 =head1 VERSION
 
-version 0.9
+version 1.1
 
 =head1 SYNOPSIS
 
@@ -446,6 +489,8 @@ The CPU utilization history chart is tinted with the following colors to reflect
 =item * B<red>: wired memory on I<Mac OS X> / I<FreeBSD>; "unaccounted" memory on I<Linux>;
 
 =item * B<cyan>: cached memory on I<Linux>, buf on I<FreeBSD>.
+
+=item * B<magenta>: used swap memory.
 
 =back
 
@@ -527,14 +572,17 @@ This.
 =item C<--[no]battery>
 
 Display the battery charge indicator.
+Enabled by default.
 
 =item C<--[no]remaining>
 
 Display the time remaining until the battery is fully charged/empty. See L</CAVEAT>.
+Disabled by default.
 
 =item C<--[no]bolt>
 
 Display even fancier battery indicator.
+Disabled by default.
 
 =item C<--[no]bright>
 
@@ -557,6 +605,13 @@ Force chart background color.
 
 Use L<load average|https://en.wikipedia.org/wiki/Load_(computing)> metric instead of CPU utilization.
 You might want to set the C<--max> threshold since this is an absolute value and has varying ranges on different systems.
+Disabled by default.
+
+=item C<--[no]swap>
+
+Display the swap usage.
+Used swap amount is added to the total amount, but the free swap amount is not!
+Disabled by default.
 
 =item C<--max NUMBER>
 
@@ -580,6 +635,11 @@ L<screen(1)|http://manpages.ubuntu.com/manpages/hardy/man1/screen.1.html> colors
 
 Chart width. Default is 38, so both the chart and the battery indicator fit the C<tmux> status line.
 Higher values may require disabling the battery indicator or raising the C<status-right-length> value in F<~/.tmux.conf>.
+
+=item C<--datfile FILENAME>
+
+Specify the file to log CPU stats to.
+Default: F<$HOME/.rainbarf.dat>
 
 =back
 
@@ -677,7 +737,15 @@ L<Clemens Hammacher|https://github.com/hammacher>
 
 =item *
 
+L<Henrik Hodne|https://github.com/henrikhodne>
+
+=item *
+
 L<Joe Hassick|https://github.com/jh3>
+
+=item *
+
+L<Josh Matthews|https://github.com/jmatth>
 
 =item *
 

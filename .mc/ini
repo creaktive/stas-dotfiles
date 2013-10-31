@@ -31,7 +31,7 @@ mouse_close_dialog=0
 fast_refresh=0
 navigate_with_arrows=0
 drop_menus=0
-wrap_mode=1
+wrap_mode=0
 old_esc_mode=1
 cd_symlinks=1
 show_all_if_ambiguous=0
@@ -151,6 +151,17 @@ torben_fj_mode=false
 quick_search_mode=2
 
 simple_swap=false
+
+[DiffView]
+show_symbols=false
+show_numbers=false
+tab_size=8
+diff_quality=0
+diff_ignore_tws=false
+diff_ignore_all_space=false
+diff_ignore_space_change=false
+diff_tab_expansion=false
+diff_ignore_case=false
 
 [Panelize]
 Find *.orig after patching=find . -name \\*.orig -print
