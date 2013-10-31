@@ -57,7 +57,7 @@
 	url = https://github.com/bling/vim-airline
 [submodule "bundle/command-t"]
 	path = bundle/command-t
-	url = https://github.com/wincent/Command-T.git
+	url = https://github.com/pfhayes/Command-T.git
 [submodule "bundle/vim-polyglot"]
 	path = bundle/vim-polyglot
 	url = https://github.com/sheerun/vim-polyglot.git
