@@ -78,7 +78,7 @@ set smartindent
 
 set showmatch
 set incsearch
-" set ignorecase
+set ignorecase
 set smartcase
 
 set showcmd
