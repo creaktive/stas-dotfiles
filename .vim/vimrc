@@ -5,7 +5,7 @@ call pathogen#infect()
 call pathogen#helptags()
 
 set number
-set mouse=a
+" set mouse=a
 set vb
 set t_Co=256
 set guifont=Terminus\ Medium:h12
@@ -53,7 +53,7 @@ let g:airline_linecolumn_prefix = '⭡'
 
 syntax on
 " set synmaxcol=200
-set colorcolumn=80
+" set colorcolumn=80
 set hlsearch
 
 set wildmenu
@@ -244,3 +244,18 @@ autocmd BufReadPost *
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
     \ endif
+
+" Stuff from http://programming.oreilly.com/2013/10/more-instantly-better-vim.html
+
+"====[ Make the 81st column stand out ]====================
+
+" OR ELSE just the 81st column of wide lines...
+highlight ColorColumn ctermbg=0
+call matchadd('ColorColumn', '\%81v', 100)
+
+vmap  <expr>  h        DVB_Drag('left')
+vmap  <expr>  l        DVB_Drag('right')
+vmap  <expr>  j        DVB_Drag('down')
+vmap  <expr>  k        DVB_Drag('up')
+vmap  <expr>  D        DVB_Duplicate()
+let g:DVB_TrimWS = 1
