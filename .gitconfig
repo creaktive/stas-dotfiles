@@ -18,7 +18,7 @@
     unstage = reset HEAD
 [core]
     excludesfile = $HOME/.gitignore
-    pager = less -FRSX
+    pager = $HOME/bin/diff-highlight | less -FRSX
     whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
 [push]
     default = matching
