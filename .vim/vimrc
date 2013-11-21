@@ -250,7 +250,7 @@ autocmd BufReadPost *
 "====[ Make the 81st column stand out ]====================
 
 " OR ELSE just the 81st column of wide lines...
-highlight ColorColumn ctermbg=0
+highlight ColorColumn ctermbg=magenta
 call matchadd('ColorColumn', '\%81v', 100)
 
 vmap  <expr>  h        DVB_Drag('left')
