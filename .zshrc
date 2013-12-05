@@ -67,6 +67,8 @@ zle -N self-insert url-quote-magic
 autoload -U zcalc
 autoload -U zed
 
+bindkey '^N'    down-history
+bindkey '^P'    up-history
 bindkey ' '     magic-space
 bindkey '^w'    backward-kill-word
 bindkey '^r'    history-incremental-search-backward
