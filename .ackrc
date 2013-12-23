@@ -2,3 +2,4 @@
 --ignore-dir=data
 --type-add=perl=.xs
 --type-add=perl=.xsh
+--type-add=perl=.comp
