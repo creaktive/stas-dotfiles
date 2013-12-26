@@ -152,6 +152,9 @@ cmap w!! %!sudo tee > /dev/null %
 "noremap     <PageDown> ""
 "noremap!    <PageDown> <NOP>
 
+nnoremap k gk
+nnoremap j gj
+
 " now all operations work with the OS clipboard
 "set clipboard=unnamed
 
@@ -226,6 +229,10 @@ map <C-a> <C-w>
 map <C-w>- :new<CR>
 map <C-w>\| :vnew<CR>
 map <C-w>; <C-\>
+
+" Easily increase and decrease next number with ctrl+m and ctrl+n
+nnoremap <C-m> <C-a>
+nnoremap <C-n> <C-x>
 
 highlight clear SpellBad
 highlight SpellBad gui=undercurl guisp=#bc6c4c
