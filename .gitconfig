@@ -16,15 +16,22 @@
     untracked = red
 [alias]
     unstage = reset HEAD
+    undopush = push -f origin HEAD^:master
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX
     whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
+    editor = vim
 [push]
     default = matching
 [merge]
     tool = vimdiff
+    # Include summaries of merged commits in newly created merge commit messages
+    log = true
 
 # https://twitter.com/franckcuny/status/299653957641441280
 [url "ssh://git@github.com/"]
     insteadOf = "gh:"
+
+[preload]
+    index = true

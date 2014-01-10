@@ -33,7 +33,7 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(vi-mode dircycle git gnu-utils macports history-substring-search zsh-syntax-highlighting)
+plugins=(vi-mode dircycle git gnu-utils macports history-substring-search zsh-syntax-highlighting colored-man colorize cpanm)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -67,8 +67,8 @@ zle -N self-insert url-quote-magic
 autoload -U zcalc
 autoload -U zed
 
-bindkey '^N'    down-history
-bindkey '^P'    up-history
+bindkey '^N'    history-substring-search-down
+bindkey '^P'    history-substring-search-up
 bindkey ' '     magic-space
 bindkey '^w'    backward-kill-word
 bindkey '^r'    history-incremental-search-backward
@@ -87,11 +87,6 @@ if [ -z "$TMUX" ]; then
         fi
         export SSH_AUTH_SOCK="$HOME/.wrap_auth_sock"
     fi
-fi
-
-if [ -x /usr/local/bin/booking-perl ]; then
-    prompt_git(){}
-    export GIT_NO_TIMING=1
 fi
 
 function rtmux {
