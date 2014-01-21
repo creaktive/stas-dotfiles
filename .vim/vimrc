@@ -53,7 +53,7 @@ let g:airline_linecolumn_prefix = '⭡'
 
 syntax on
 " set synmaxcol=200
-" set colorcolumn=80
+set colorcolumn=81
 set hlsearch
 
 set wildmenu
