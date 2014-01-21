@@ -252,13 +252,18 @@ autocmd BufReadPost *
     \   exe "normal! g`\"" |
     \ endif
 
+autocmd QuickFixCmdPost *grep* cwindow
+
+" \\g for global git search for word under the cursor (with highlight)
+nmap <leader>g :let @/="\\<<C-R><C-W>\\>"<CR>:set hls<CR>:silent Ggrep -w "<C-R><C-W>"<CR>:ccl<CR>:cw<CR><CR>
+
 " Stuff from http://programming.oreilly.com/2013/10/more-instantly-better-vim.html
 
 "====[ Make the 81st column stand out ]====================
 
 " OR ELSE just the 81st column of wide lines...
-highlight ColorColumn ctermbg=magenta
-call matchadd('ColorColumn', '\%81v', 100)
+" highlight ColorColumn ctermbg=magenta
+" call matchadd('ColorColumn', '\%81v', 100)
 
 vmap  <expr>  h        DVB_Drag('left')
 vmap  <expr>  l        DVB_Drag('right')
