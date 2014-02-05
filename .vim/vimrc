@@ -110,6 +110,8 @@ endfunction
 
 autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
 autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx
+autocmd BufRead,BufNewFile *.comp set ft=mason
+autocmd BufRead,BufNewFile *.hql set ft=sql
 
 set backup
 set backupdir=~/tmp,/tmp
