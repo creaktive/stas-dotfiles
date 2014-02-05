@@ -5,7 +5,7 @@ call pathogen#infect()
 call pathogen#helptags()
 
 set number
-" set mouse=a
+set mouse=a
 set vb
 set t_Co=256
 set guifont=Terminus\ Medium:h12
