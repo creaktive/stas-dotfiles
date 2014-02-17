@@ -228,9 +228,13 @@ nnoremap <C-n> <C-x>
 
 highlight clear SignColumn
 
-autocmd BufReadPost *
+autocmd BufReadPost * nested
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
+    \ endif |
+    \ if !exists('b:reload_dos') && !&binary && &ff=='unix' && (0 < search('\r$', 'nc')) |
+    \   let b:reload_dos = 1 |
+    \   e ++ff=dos |
     \ endif
 
 autocmd QuickFixCmdPost *grep* cwindow
