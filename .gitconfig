@@ -35,3 +35,5 @@
 
 [preload]
     index = true
+[gc]
+    auto = 0
