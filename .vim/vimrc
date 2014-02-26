@@ -96,7 +96,7 @@ let g:CommandTUseGitLsFiles = 1
 " let perl_nofold_packages=1
 let perl_extended_vars=1
 let perl_include_pod=1
-autocmd FileType perl :call SetupPerl()
+autocmd FileType perl,mason :call SetupPerl()
 function! SetupPerl()
     compiler perl
     setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
