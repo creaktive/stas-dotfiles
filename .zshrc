@@ -67,6 +67,8 @@ zle -N self-insert url-quote-magic
 autoload -U zcalc
 autoload -U zed
 
+bindkey '\e[B'  history-substring-search-down
+bindkey '\e[A'  history-substring-search-up
 bindkey '^N'    history-substring-search-down
 bindkey '^P'    history-substring-search-up
 bindkey ' '     magic-space
