@@ -138,22 +138,22 @@ cnoreabbrev Q w
 cmap w!! %!sudo tee > /dev/null %
 
 " kill'em all!!!
-"nnoremap    <Up> <NOP>
-"nnoremap    <Down> <NOP>
-"nnoremap    <Left> <NOP>
-"nnoremap    <Right> <NOP>
-"noremap     <Insert> ""
-"noremap!    <Insert> <NOP>
-"noremap     <Delete> ""
-"noremap!    <Delete> <NOP>
-"noremap     <Home> ""
-"noremap!    <Home> <NOP>
-"noremap     <End> ""
-"noremap!    <End> <NOP>
-"noremap     <PageUp> ""
-"noremap!    <PageUp> <NOP>
-"noremap     <PageDown> ""
-"noremap!    <PageDown> <NOP>
+nnoremap    <Up> <NOP>
+nnoremap    <Down> <NOP>
+nnoremap    <Left> <NOP>
+nnoremap    <Right> <NOP>
+noremap     <Insert> ""
+noremap!    <Insert> <NOP>
+noremap     <Delete> ""
+noremap!    <Delete> <NOP>
+noremap     <Home> ""
+noremap!    <Home> <NOP>
+noremap     <End> ""
+noremap!    <End> <NOP>
+noremap     <PageUp> ""
+noremap!    <PageUp> <NOP>
+noremap     <PageDown> ""
+noremap!    <PageDown> <NOP>
 
 nnoremap k gk
 nnoremap j gj
@@ -250,10 +250,3 @@ nmap <leader>g :let @/="\\<<C-R><C-W>\\>"<CR>:set hls<CR>:silent Ggrep -w "<C-R>
 " OR ELSE just the 81st column of wide lines...
 " highlight ColorColumn ctermbg=magenta
 " call matchadd('ColorColumn', '\%81v', 100)
-
-vmap  <expr>  h        DVB_Drag('left')
-vmap  <expr>  l        DVB_Drag('right')
-vmap  <expr>  j        DVB_Drag('down')
-vmap  <expr>  k        DVB_Drag('up')
-vmap  <expr>  D        DVB_Duplicate()
-let g:DVB_TrimWS = 1
