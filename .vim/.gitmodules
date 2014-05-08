@@ -61,3 +61,6 @@
 [submodule "bundle/vim-vinegar"]
 	path = bundle/vim-vinegar
 	url = git://github.com/tpope/vim-vinegar.git
+[submodule "/Users/stas/.vim/bundle/vim-bufferline"]
+	path = /Users/stas/.vim/bundle/vim-bufferline
+	url = https://github.com/bling/vim-bufferline
