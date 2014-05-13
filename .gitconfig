@@ -17,6 +17,7 @@
 [alias]
     unstage = reset HEAD
     undopush = push -f origin HEAD^:master
+    prp = !git pull --rebase && git push
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX
