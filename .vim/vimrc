@@ -108,6 +108,7 @@ function! SetupPerl()
     map <F6> :%!perltidy<CR>
     vmap <F6> :!perltidy<CR>
 endfunction
+set updatetime=500
 
 autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
 autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx

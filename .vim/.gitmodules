@@ -60,4 +60,7 @@
 	url = https://github.com/sheerun/vim-polyglot.git
 [submodule "bundle/vim-vinegar"]
 	path = bundle/vim-vinegar
-	url = git://github.com/tpope/vim-vinegar.git
+	url = https://github.com/tpope/vim-vinegar.git
+[submodule "bundle/vim-hl-var"]
+	path = bundle/vim-hl-var
+	url = https://github.com/pjcj/vim-hl-var.git
