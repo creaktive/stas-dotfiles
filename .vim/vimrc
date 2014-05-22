@@ -115,6 +115,7 @@ autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx
 autocmd BufRead,BufNewFile *.comp set ft=mason
 autocmd BufRead,BufNewFile *.hql set ft=sql
 autocmd BufRead,BufNewFile /tmp/sql* set ft=sql
+autocmd BufRead,BufNewFile *.[ct]sv set ft=text
 
 set backup
 set backupdir=~/tmp,/tmp
