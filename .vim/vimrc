@@ -89,6 +89,7 @@ filetype on
 filetype plugin on
 filetype indent on
 
+let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:100'
 let g:ctrlp_user_command = ['.git', 'cd %s && git ls-files . -co --exclude-standard', 'find %s -maxdepth 4 -type f -size +0c']
 let g:CommandTUseGitLsFiles = 1
 
