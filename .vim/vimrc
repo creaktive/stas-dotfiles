@@ -142,22 +142,22 @@ cnoreabbrev Q w
 cmap w!! %!sudo tee > /dev/null %
 
 " kill'em all!!!
-nnoremap    <Up> <NOP>
-nnoremap    <Down> <NOP>
-nnoremap    <Left> <NOP>
-nnoremap    <Right> <NOP>
-noremap     <Insert> ""
-noremap!    <Insert> <NOP>
-noremap     <Delete> ""
-noremap!    <Delete> <NOP>
-noremap     <Home> ""
-noremap!    <Home> <NOP>
-noremap     <End> ""
-noremap!    <End> <NOP>
-noremap     <PageUp> ""
-noremap!    <PageUp> <NOP>
-noremap     <PageDown> ""
-noremap!    <PageDown> <NOP>
+" nnoremap    <Up> <NOP>
+" nnoremap    <Down> <NOP>
+" nnoremap    <Left> <NOP>
+" nnoremap    <Right> <NOP>
+" noremap     <Insert> ""
+" noremap!    <Insert> <NOP>
+" noremap     <Delete> ""
+" noremap!    <Delete> <NOP>
+" noremap     <Home> ""
+" noremap!    <Home> <NOP>
+" noremap     <End> ""
+" noremap!    <End> <NOP>
+" noremap     <PageUp> ""
+" noremap!    <PageUp> <NOP>
+" noremap     <PageDown> ""
+" noremap!    <PageDown> <NOP>
 
 nnoremap k gk
 nnoremap j gj
