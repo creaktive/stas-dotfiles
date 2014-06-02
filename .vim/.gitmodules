@@ -14,9 +14,6 @@
 [submodule "bundle/perlcritic-compiler-script"]
 	path = bundle/perlcritic-compiler-script
 	url = https://github.com/vim-scripts/perlcritic-compiler-script.git
-[submodule "bundle/perlomni.vim"]
-	path = bundle/perlomni.vim
-	url = https://github.com/c9s/perlomni.vim.git
 [submodule "bundle/tagbar"]
 	path = bundle/tagbar
 	url = https://github.com/majutsushi/tagbar.git
