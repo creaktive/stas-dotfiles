@@ -232,6 +232,8 @@ nnoremap <C-m> <C-a>
 nnoremap <C-n> <C-x>
 
 highlight clear SignColumn
+let g:gitgutter_realtime = 0
+let g:gitgutter_eager = 0
 
 autocmd BufReadPost * nested
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
