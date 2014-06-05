@@ -58,3 +58,6 @@
 [submodule "bundle/ctrlp"]
 	path = bundle/ctrlp
 	url = https://github.com/kien/ctrlp.vim.git
+[submodule "bundle/vim-hl-var"]
+	path = bundle/vim-hl-var
+	url = https://github.com/pjcj/vim-hl-var.git
