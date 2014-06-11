@@ -17,7 +17,12 @@ set guioptions-=r
 let g:solarized_italic=0
 let g:Powerline_symbols='fancy'
 colorscheme solarized
-set background=dark
+let white_background=$WHITE_BACKGROUND
+if white_background == '1'
+    set background=light
+else
+    set background=dark
+endif
 set backspace=indent,eol,start
 
 " Display indentation guides
