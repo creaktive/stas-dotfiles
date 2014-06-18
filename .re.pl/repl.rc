@@ -36,4 +36,4 @@ load_plugin qw(
 );
 #Timing
 
-say "\033]0;re.pl\007";
+#say "\033]0;re.pl\007";
