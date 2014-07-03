@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+trap "rm -f .git/tags.$$" EXIT
+ctags -f .git/tags.$$                   \
+    --recurse --totals --tag-relative   \
+    --exclude=blib --exclude=.svn       \
+    --exclude=.git --exclude='*~'       \
+    --extra=q                           \
+    --languages=Perl                    \
+    --langmap=Perl:+.t
+mv .git/tags.$$ .git/tags

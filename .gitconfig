@@ -2,6 +2,13 @@
     name = Stanislaw Pusep
     email = creaktive@gmail.com
 
+[preload]
+    index = true
+[gc]
+    auto = 0
+[init]
+    templatedir = ~/.git_template
+
 # https://coderwall.com/p/-89vba
 [color]
     diff = auto
@@ -33,8 +40,3 @@
 # https://twitter.com/franckcuny/status/299653957641441280
 [url "ssh://git@github.com/"]
     insteadOf = "gh:"
-
-[preload]
-    index = true
-[gc]
-    auto = 0
