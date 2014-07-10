@@ -231,6 +231,8 @@ map <C-a> <C-w>
 map <C-w>- :new<CR>
 map <C-w>\| :vnew<CR>
 map <C-w>; <C-\>
+set splitbelow
+set splitright
 
 " Easily increase and decrease next number with ctrl+m and ctrl+n
 nnoremap <C-m> <C-a>
