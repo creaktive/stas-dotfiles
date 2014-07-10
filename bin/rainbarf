@@ -8,7 +8,7 @@ use List::Util qw(max sum);
 use Storable qw(lock_retrieve lock_store);
 
 ## no critic (ProhibitBacktickOperators ProhibitComplexRegexes ProhibitInteractiveTest)
-our $VERSION = q(1.1);
+our $VERSION = q(1.2);
 
 my %rgb = (
     black   => [qw[0 0 0]],
@@ -28,24 +28,13 @@ my $order   = '';
 my $screen  = 0;
 my $tmux    = not -t \*STDOUT;
 my $rgb     = 0;
+my $skip    = 0;
 
 my ($help, $show_battery, $remaining, $bolt, $chart_bg, $chart_fg,
     $bright, $loadavg, $swap, $threshold, $width, $history);
 
 # parse the options file
-my $rcname = exists($ENV{RAINBARF})
-    ? $ENV{RAINBARF}
-    : qq($ENV{HOME}/.rainbarf.conf);
-if (open(my $rcfile, q(<), $rcname)) {
-    while (<$rcfile>) {
-        s/\#.*$//x;
-        s/\s+//gx;
-        if (/^(?:\-{2})?(\w+(?:=\w+)?)$/x) {
-            unshift @ARGV => q(--) . $1;
-        }
-    }
-    close $rcfile;
-}
+parse_config();
 
 if (@ARGV) {
     require Getopt::Long;
@@ -66,6 +55,7 @@ if (@ARGV) {
         q(rgb!)         => \$rgb,
         q(width=i)      => \$width,
         q(datfile=s)    => \$history,
+        q(skip=i)       => \$skip,
     ) or help(-verbose => 1);
 }
 
@@ -79,7 +69,8 @@ my $cpu = $loadavg ? load() : usage();
 
 push @$chart => $cpu;
 splice @$chart => 0, @$chart - $width if @$chart > $width;
-lock_store $chart => $history;
+lock_store $chart => $history
+    if time - ((stat $history)[9] || 0) >= $skip;
 
 unshift @$chart => (0) x ($width - @$chart);
 
@@ -126,6 +117,24 @@ my_reset(1);
 
 # For dependencies linting
 #printf qq(%-20s\t%s\n), $_ => $INC{$_} for sort keys %INC;
+
+sub parse_config {
+    my $rcname = exists($ENV{RAINBARF})
+        ? $ENV{RAINBARF}
+        : qq($ENV{HOME}/.rainbarf.conf);
+    if (open(my $rcfile, q(<), $rcname)) {
+        while (<$rcfile>) {
+            s/\#.*$//x;
+            s/\s+//gx;
+            if (/^(?:\-{2})?(\w+(?:=\w+)?)$/x) {
+                unshift @ARGV => q(--) . $1;
+            }
+        }
+        close $rcfile;
+    }
+
+    return;
+}
 
 sub help {
     my (@args) = @_;
@@ -318,7 +327,7 @@ sub memory {
                 ) : ();
         } <$meminfo>;
         close $meminfo;
-        $m{c} -= delete $m{sc};
+        $m{c} -= delete $m{sc} || 0;
         delete $m{c} if $m{c} < 0;
         my $x = delete($m{st}) - delete($m{sf});
         $m{w} = delete($m{t}) - sum values %m;
@@ -467,7 +476,7 @@ rainbarf - CPU/RAM/battery stats chart bar for tmux (and GNU screen)
 
 =head1 VERSION
 
-version 1.1
+version 1.2
 
 =head1 SYNOPSIS
 
@@ -511,6 +520,12 @@ Traditional way:
  perl Build.PL
  ./Build test
  ./Build install
+
+=item *
+
+L<Homebrew|http://brew.sh/> way:
+
+ brew install rainbarf
 
 =item *
 
@@ -641,6 +656,11 @@ Higher values may require disabling the battery indicator or raising the C<statu
 Specify the file to log CPU stats to.
 Default: F<$HOME/.rainbarf.dat>
 
+=item C<--skip NUMBER>
+
+Do not write CPU stats if file already exists and is newer than this many seconds.
+Useful if you refresh C<tmux> status quite frequently.
+
 =back
 
 =head1 CAVEAT
@@ -763,7 +783,7 @@ L<Tuomas Jormola|https://github.com/tjormola>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Stanislaw Pusep <stas@sysd.org>.
+This software is copyright (c) 2014 by Stanislaw Pusep <stas@sysd.org>.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
