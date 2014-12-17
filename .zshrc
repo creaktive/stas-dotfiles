@@ -99,3 +99,6 @@ function rtmux {
 }
 
 alias tb='tmux save-buffer'
+
+alias grep="grep $GREP_OPTIONS"
+unset GREP_OPTIONS GREP_COLOR
