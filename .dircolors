@@ -61,6 +61,8 @@ TERM cons25
 TERM console
 TERM cygwin
 TERM dtterm
+TERM dvtm
+TERM dvtm-256color
 TERM Eterm
 TERM eterm-color
 TERM fbterm
@@ -253,6 +255,7 @@ EXEC 01;31  # Unix
 .p 32
 .pod 32
 .tex 32
+.go 32
 
 ### Multimedia formats
 
@@ -273,6 +276,7 @@ EXEC 01;31  # Unix
 .pdf 33
 .pgm 33
 .png 33
+.PNG 33
 .ppm 33
 .pps 33
 .ppsx 33
@@ -293,6 +297,7 @@ EXEC 01;31  # Unix
 .aac 33
 .au  33
 .flac 33
+.m4a 33
 .mid 33
 .midi 33
 .mka 33
@@ -317,6 +322,7 @@ EXEC 01;31  # Unix
 .m4v 33
 .mkv 33
 .mov 33
+.MOV 33
 .mp4 33
 .mp4v 33
 .mpeg 33
@@ -330,6 +336,7 @@ EXEC 01;31  # Unix
 .rmvb 33
 .swf 33
 .vob 33
+.webm 33
 .wmv 33
 
 ### Misc
