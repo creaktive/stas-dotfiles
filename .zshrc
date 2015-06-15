@@ -102,3 +102,5 @@ alias tb='tmux save-buffer'
 
 alias grep="grep $GREP_OPTIONS"
 unset GREP_OPTIONS GREP_COLOR
+
+alias apg="apg -m 12 -M sNC -n 10 -r /usr/share/dict/words -t"
