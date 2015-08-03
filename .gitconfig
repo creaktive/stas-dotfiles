@@ -21,10 +21,16 @@
     added = green
     changed = yellow
     untracked = red
+[color "grep"]
+    filename = bold green
+    linenumber = bold yellow
+    match = yellow reverse
+    separator = normal
 [alias]
     unstage = reset HEAD
     undopush = push -f origin HEAD^:master
     prp = !git pull --rebase && git push
+    g = grep --break --heading --line-number --context 1 --show-function
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX

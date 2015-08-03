@@ -1,3 +1,4 @@
+--context=1
 --ignore-dir=.build
 --ignore-dir=data
 --type-add=perl=.xs
