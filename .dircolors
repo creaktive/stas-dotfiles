@@ -20,7 +20,7 @@
 #   editable text including source, unimportant text, binary docs & multimedia source
 #   files, viewable multimedia, archived/compressed, and unimportant non-text
 # - For uniqueness, we stay away from the Solarized foreground colors are -- either
-#   base00 (brightyellow) or base0 (brighblue).  However, they can be used if
+#   base00 (brightyellow) or base0 (brightblue).  However, they can be used if
 #   you know what the bg/fg colors of your terminal are, in order to optimize the display.
 # - 3 different options are provided: universal, solarized dark, and solarized light.
 #   The only difference between the universal scheme and one that's optimized for
@@ -95,9 +95,11 @@ TERM screen-256color
 TERM screen-256color-bce
 TERM screen-256color-s
 TERM screen-256color-bce-s
+TERM screen-256color-italic
 TERM screen-bce
 TERM screen-w
 TERM screen.linux
+TERM screen.xterm-256color
 TERM screen.xterm-new
 TERM st
 TERM st-meta
@@ -108,6 +110,7 @@ TERM xterm
 TERM xterm-new
 TERM xterm-16color
 TERM xterm-256color
+TERM xterm-256color-italic
 TERM xterm-88color
 TERM xterm-color
 TERM xterm-debian
@@ -214,7 +217,9 @@ EXEC 01;31  # Unix
 .cpp 32
 .cxx 32
 .objc 32
+.cl 32
 .sh 32
+.bash 32
 .csh 32
 .zsh 32
 .el 32
@@ -256,6 +261,7 @@ EXEC 01;31  # Unix
 .pod 32
 .tex 32
 .go 32
+.sql 32
 
 ### Multimedia formats
 
@@ -345,12 +351,18 @@ EXEC 01;31  # Unix
 .doc 31
 .docx 31
 .rtf 31
+.odt 31
 .dot 31
 .dotx 31
+.ott 31
 .xls 31
 .xlsx 31
+.ods 31
+.ots 31
 .ppt 31
 .pptx 31
+.odp 31
+.otp 31
 .fla 31
 .psd 31
 

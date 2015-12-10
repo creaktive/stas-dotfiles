@@ -26,6 +26,8 @@
     linenumber = bold yellow
     match = yellow reverse
     separator = normal
+[format]
+    pretty = fuller
 [alias]
     unstage = reset HEAD
     undopush = push -f origin HEAD^:master
