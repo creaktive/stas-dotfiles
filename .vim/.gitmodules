@@ -62,3 +62,6 @@
 [submodule "bundle/vim-hl-var"]
 	path = bundle/vim-hl-var
 	url = https://github.com/pjcj/vim-hl-var.git
+[submodule "bundle/vim-airline-themes"]
+	path = bundle/vim-airline-themes
+	url = https://github.com/vim-airline/vim-airline-themes
