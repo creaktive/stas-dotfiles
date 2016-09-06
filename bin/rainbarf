@@ -8,7 +8,7 @@ use List::Util qw(max sum);
 use Storable qw(lock_retrieve lock_store);
 
 ## no critic (ProhibitBacktickOperators ProhibitComplexRegexes ProhibitInteractiveTest)
-our $VERSION = q(1.3);
+our $VERSION = q(1.4);
 
 my %rgb = (
     black   => [qw[0 0 0]],
@@ -353,6 +353,7 @@ sub battery_osx {
             ? (lc chr ord $1 => $2)
             : ()
     } qx{/usr/sbin/ioreg -n AppleSmartBattery -r};
+    return () if 5 != keys %battery;
 
     my $time;
     if ($battery{f} eq q(No)
@@ -372,7 +373,7 @@ sub battery_acpi {
         -d $_
         and -e ($acpi_info  ||= qq($_/info))
         and -e ($acpi_state ||= qq($_/state))
-    } sort glob q(/proc/acpi/battery/BAT[0-9]);
+    } sort glob q(/proc/acpi/battery/{BAT,CMB}[0-9]);
 
     for my $file ($acpi_info, $acpi_state) {
         my $fh;
@@ -404,7 +405,7 @@ sub battery_sys {
         and ( ( -e qq($_/energy_full) and -e qq($_/energy_now) ) or
               ( -e qq($_/charge_now) and -e qq($_/current_now) ) )
         and -e ($uevent ||= qq($_/uevent))
-    } sort glob q(/sys/class/power_supply/BAT[0-9]);
+    } sort glob q(/sys/class/power_supply/{BAT,CMB}[0-9]);
 
     my $fh;
     if (open $fh, q(<), $uevent) {
@@ -430,6 +431,24 @@ sub battery_sys {
     return ($battery, $charging, $time);
 }
 
+sub battery_freebsd {
+    my $battery = qx{/sbin/sysctl -n hw.acpi.battery.life 2>/dev/null} or return;
+    my $charging = qx,/sbin/sysctl -n hw.acpi.battery.state,;
+    my $time = qx,/sbin/sysctl -n hw.acpi.battery.time,;
+
+    $battery /= 100;
+
+    if ($charging == 2) {
+        $charging = 1;
+    } elsif ($charging == 7) { # Battery absent
+        return;
+    } else {
+        $charging = 0;
+    }
+
+    return ($battery, $charging, $time);
+}
+
 sub battery {
     my @battery;
     if (-x q{/usr/sbin/ioreg}) {
@@ -438,6 +457,8 @@ sub battery {
         @battery = battery_acpi();
     } elsif (-d q(/sys/class/power_supply)) {
         @battery = battery_sys();
+    } elsif ($^O eq q(freebsd)) {
+        @battery = battery_freebsd();
     }
 
     battery_print(@battery);
@@ -493,7 +514,7 @@ rainbarf - CPU/RAM/battery stats chart bar for tmux (and GNU screen)
 
 =head1 VERSION
 
-version 1.3
+version 1.4
 
 =head1 SYNOPSIS
 
@@ -770,6 +791,10 @@ L<Chris Knadler|https://github.com/cknadler>
 
 =item *
 
+L<cinaeco|https://github.com/cinaeco>
+
+=item *
+
 L<Clemens Hammacher|https://github.com/hammacher>
 
 =item *
@@ -790,6 +815,10 @@ L<Josh Matthews|https://github.com/jmatth>
 
 =item *
 
+L<Lars Engels|https://github.com/larsengels>
+
+=item *
+
 L<Sergey Romanov|https://github.com/sergeyromanov>
 
 =item *
@@ -804,7 +833,7 @@ L<Tuomas Jormola|https://github.com/tjormola>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2015 by Stanislaw Pusep <stas@sysd.org>.
+This software is copyright (c) 2016 by Stanislaw Pusep <stas@sysd.org>.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
