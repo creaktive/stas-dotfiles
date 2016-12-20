@@ -58,7 +58,7 @@ set wildmenu
 set cursorline
 set laststatus=2
 
-set spell spelllang=pt,en
+set spell spelllang=nl,pt,en
 
 set history=10000
 set tabstop=4
