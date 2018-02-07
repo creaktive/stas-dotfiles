@@ -37,7 +37,7 @@
     colored         => 1,
     deparse         => 1,
     filters         => {
-        -external   => [qw(DateTime DB Digest JSON URI)],
+        -external   => [qw(DateTime DB Digest URI)],
     },
     print_escapes   => 1,
     return_value    => 'pass',
