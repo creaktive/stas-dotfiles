@@ -36,6 +36,10 @@ DISABLE_AUTO_UPDATE="true"
 plugins=(gnu-utils history-substring-search)
 
 source $ZSH/oh-my-zsh.sh
+
+export HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+export HIST_FIND_NO_DUPS=1
+export HIST_IGNORE_DUPS=1
 source $HOME/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # Customize to your needs...
