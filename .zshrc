@@ -21,6 +21,7 @@ DISABLE_AUTO_UPDATE="true"
 export HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
 export HIST_FIND_NO_DUPS=1
 export HIST_IGNORE_DUPS=1
+setopt HIST_IGNORE_ALL_DUPS
 source $HOME/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # Uncomment to change how many often would you like to wait before auto-updates occur? (in days)
