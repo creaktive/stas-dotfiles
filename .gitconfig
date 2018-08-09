@@ -49,3 +49,9 @@
 # https://twitter.com/franckcuny/status/299653957641441280
 [url "ssh://git@github.com/"]
     insteadOf = "gh:"
+
+# https://stackoverflow.com/questions/30208928/can-git-pull-automatically-stash-and-pop-pending-changes/30209750#30209750
+[pull]
+    rebase = true
+[rebase]
+    autoStash = true
