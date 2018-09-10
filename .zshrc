@@ -39,7 +39,7 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(catimg colorize command-not-found cpanm dircycle git-extras gnu-utils history-substring-search httpie  ssh-agent sudo web-search)
+plugins=(catimg colorize command-not-found cpanm dircycle git-extras gnu-utils history-substring-search httpie sudo web-search)
 
 source $ZSH/oh-my-zsh.sh
 
