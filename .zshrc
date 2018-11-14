@@ -41,6 +41,8 @@ COMPLETION_WAITING_DOTS="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(catimg colorize command-not-found cpanm dircycle git-extras gnu-utils history-substring-search httpie sudo web-search)
 
+zstyle :omz:plugins:ssh-agent agent-forwarding on
+
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
@@ -73,18 +75,6 @@ bindkey -M emacs '^N' history-substring-search-down
 # bind k and j for VI mode
 bindkey -M vicmd 'k' history-substring-search-up
 bindkey -M vicmd 'j' history-substring-search-down
-
-if [ -z "$TMUX" ]; then
-    if [ ! -z "$SSH_TTY" ]; then
-        if [ ! -z "$SSH_AUTH_SOCK" ]; then
-            [ -z "$TEMP" ] && TEMP="/tmp"
-            mkdir -p "$TEMP/$USER"
-            chmod 700 "$TEMP/$USER"
-            ln -sf "$SSH_AUTH_SOCK" "$TEMP/$USER/.wrap_auth_sock"
-        fi
-        export SSH_AUTH_SOCK="$TEMP/$USER/.wrap_auth_sock"
-    fi
-fi
 
 alias tb='tmux save-buffer'
 
