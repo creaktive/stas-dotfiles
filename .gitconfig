@@ -33,6 +33,7 @@
     undopush = push -f origin HEAD^:master
     prp = !git pull --rebase && git push
     g = grep --break --heading --line-number --context 1 --show-function
+    stahp = config oh-my-zsh.hide-status 1
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX

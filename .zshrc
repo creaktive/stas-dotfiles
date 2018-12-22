@@ -1,3 +1,5 @@
+# zmodload zsh/zprof
+
 # Path to your oh-my-zsh configuration.
 ZSH=$HOME/.oh-my-zsh
 
@@ -39,7 +41,7 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(catimg colorize command-not-found cpanm dircycle git-extras gnu-utils history-substring-search httpie sudo web-search)
+plugins=(catimg colorize cpanm dircycle git-extras gnu-utils history-substring-search httpie sudo web-search)
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
 
@@ -82,3 +84,5 @@ alias grep="grep $GREP_OPTIONS"
 unset GREP_OPTIONS GREP_COLOR
 
 alias apg="apg -m 12 -M sNC -n 10 -r /usr/share/dict/words -t"
+
+# zprof
