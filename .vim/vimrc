@@ -108,9 +108,7 @@ function! SetupPerl()
 endfunction
 set updatetime=500
 
-autocmd Filetype erlang setlocal omnifunc=erlang_complete#Complete
 autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx
-autocmd BufRead,BufNewFile *.comp set ft=mason
 autocmd BufRead,BufNewFile *.hql set ft=sql
 autocmd BufRead,BufNewFile /tmp/sql* set ft=sql
 autocmd BufRead,BufNewFile *.[ct]sv set ft=text
@@ -123,9 +121,8 @@ if has("persistent_undo")
     set undofile
 endif
 
-nnoremap <F3> :UndotreeToggle<cr>
-
 "set grepprg=ack\ -a
+map <F7> :Ggrep <cword><CR>
 
 " dont use Q for Ex mode
 map Q :q
