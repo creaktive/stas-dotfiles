@@ -122,7 +122,7 @@ if has("persistent_undo")
 endif
 
 "set grepprg=ack\ -a
-map <F7> :Ggrep <cword><CR>
+map <F7> :Ggrep -w <cword><CR>
 
 " dont use Q for Ex mode
 map Q :q
