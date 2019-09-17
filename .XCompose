@@ -1,0 +1,105 @@
+# grave is sorted out :)
+include "/usr/share/X11/locale/en_US.UTF-8/Compose"
+
+## mimic Apple compose style for pt-BR
+# 'e' for acute
+<Multi_key> <e> <a>             : "á"   aacute # LATIN SMALL LETTER A WITH ACUTE
+<Multi_key> <E> <a>             : "á"   aacute # LATIN SMALL LETTER A WITH ACUTE
+<Multi_key> <e> <e>             : "é"   eacute # LATIN SMALL LETTER E WITH ACUTE
+<Multi_key> <E> <e>             : "é"   eacute # LATIN SMALL LETTER E WITH ACUTE
+<Multi_key> <e> <i>             : "í"   iacute # LATIN SMALL LETTER I WITH ACUTE
+<Multi_key> <E> <i>             : "í"   iacute # LATIN SMALL LETTER I WITH ACUTE
+<Multi_key> <e> <o>             : "ó"   oacute # LATIN SMALL LETTER O WITH ACUTE
+<Multi_key> <E> <o>             : "ó"   oacute # LATIN SMALL LETTER O WITH ACUTE
+<Multi_key> <e> <u>             : "ú"   uacute # LATIN SMALL LETTER U WITH ACUTE
+<Multi_key> <E> <u>             : "ú"   uacute # LATIN SMALL LETTER U WITH ACUTE
+
+<Multi_key> <e> <A>             : "Á"   Aacute # LATIN CAPITAL LETTER A WITH ACUTE
+<Multi_key> <E> <A>             : "Á"   Aacute # LATIN CAPITAL LETTER A WITH ACUTE
+<Multi_key> <e> <E>             : "É"   Eacute # LATIN CAPITAL LETTER E WITH ACUTE
+<Multi_key> <E> <E>             : "É"   Eacute # LATIN CAPITAL LETTER E WITH ACUTE
+<Multi_key> <e> <I>             : "Í"   Iacute # LATIN CAPITAL LETTER I WITH ACUTE
+<Multi_key> <E> <I>             : "Í"   Iacute # LATIN CAPITAL LETTER I WITH ACUTE
+<Multi_key> <e> <O>             : "Ó"   Oacute # LATIN CAPITAL LETTER O WITH ACUTE
+<Multi_key> <E> <O>             : "Ó"   Oacute # LATIN CAPITAL LETTER O WITH ACUTE
+<Multi_key> <e> <U>             : "Ú"   Uacute # LATIN CAPITAL LETTER U WITH ACUTE
+<Multi_key> <E> <U>             : "Ú"   Uacute # LATIN CAPITAL LETTER U WITH ACUTE
+
+# 'u' for diaeresis
+<Multi_key> <u> <a>             : "ä"   adiaeresis # LATIN SMALL LETTER A WITH DIAERESIS
+<Multi_key> <U> <a>             : "ä"   adiaeresis # LATIN SMALL LETTER A WITH DIAERESIS
+<Multi_key> <u> <e>             : "ë"   ediaeresis # LATIN SMALL LETTER U WITH DIAERESIS
+<Multi_key> <U> <e>             : "ë"   ediaeresis # LATIN SMALL LETTER U WITH DIAERESIS
+<Multi_key> <u> <i>             : "ï"   idiaeresis # LATIN SMALL LETTER I WITH DIAERESIS
+<Multi_key> <U> <i>             : "ï"   idiaeresis # LATIN SMALL LETTER I WITH DIAERESIS
+<Multi_key> <u> <o>             : "ö"   odiaeresis # LATIN SMALL LETTER O WITH DIAERESIS
+<Multi_key> <U> <o>             : "ö"   odiaeresis # LATIN SMALL LETTER O WITH DIAERESIS
+<Multi_key> <u> <u>             : "ü"   udiaeresis # LATIN SMALL LETTER U WITH DIAERESIS
+<Multi_key> <U> <u>             : "ü"   udiaeresis # LATIN SMALL LETTER U WITH DIAERESIS
+
+<Multi_key> <u> <A>             : "Ä"   Adiaeresis # LATIN CAPITAL LETTER A WITH DIAERESIS
+<Multi_key> <U> <A>             : "Ä"   Adiaeresis # LATIN CAPITAL LETTER A WITH DIAERESIS
+<Multi_key> <u> <E>             : "Ë"   Ediaeresis # LATIN CAPITAL LETTER U WITH DIAERESIS
+<Multi_key> <U> <E>             : "Ë"   Ediaeresis # LATIN CAPITAL LETTER U WITH DIAERESIS
+<Multi_key> <u> <I>             : "Ï"   Idiaeresis # LATIN CAPITAL LETTER I WITH DIAERESIS
+<Multi_key> <U> <I>             : "Ï"   Idiaeresis # LATIN CAPITAL LETTER I WITH DIAERESIS
+<Multi_key> <u> <O>             : "Ö"   Odiaeresis # LATIN CAPITAL LETTER O WITH DIAERESIS
+<Multi_key> <U> <O>             : "Ö"   Odiaeresis # LATIN CAPITAL LETTER O WITH DIAERESIS
+<Multi_key> <u> <U>             : "ü"   Udiaeresis # LATIN CAPITAL LETTER U WITH DIAERESIS
+<Multi_key> <U> <U>             : "Ü"   Udiaeresis # LATIN CAPITAL LETTER U WITH DIAERESIS
+
+# 'i' for circumflex
+<Multi_key> <i> <a>             : "â"   acircumflex # LATIN SMALL LETTER A WITH CIRCUMFLEX
+<Multi_key> <I> <a>             : "â"   acircumflex # LATIN SMALL LETTER A WITH CIRCUMFLEX
+<Multi_key> <i> <e>             : "ê"   ecircumflex # LATIN SMALL LETTER E WITH CIRCUMFLEX
+<Multi_key> <I> <e>             : "ê"   ecircumflex # LATIN SMALL LETTER E WITH CIRCUMFLEX
+<Multi_key> <i> <i>             : "î"   icircumflex # LATIN SMALL LETTER I WITH CIRCUMFLEX
+<Multi_key> <I> <i>             : "î"   icircumflex # LATIN SMALL LETTER I WITH CIRCUMFLEX
+<Multi_key> <i> <o>             : "ô"   ocircumflex # LATIN SMALL LETTER O WITH CIRCUMFLEX
+<Multi_key> <I> <o>             : "ô"   ocircumflex # LATIN SMALL LETTER O WITH CIRCUMFLEX
+<Multi_key> <i> <u>             : "û"   ucircumflex # LATIN SMALL LETTER U WITH CIRCUMFLEX
+<Multi_key> <I> <u>             : "û"   ucircumflex # LATIN SMALL LETTER U WITH CIRCUMFLEX
+
+<Multi_key> <i> <A>             : "Â"   Acircumflex # LATIN CAPITAL LETTER A WITH CIRCUMFLEX
+<Multi_key> <I> <A>             : "Â"   Acircumflex # LATIN CAPITAL LETTER A WITH CIRCUMFLEX
+<Multi_key> <i> <E>             : "Ê"   Ecircumflex # LATIN CAPITAL LETTER E WITH CIRCUMFLEX
+<Multi_key> <I> <E>             : "Ê"   Ecircumflex # LATIN CAPITAL LETTER E WITH CIRCUMFLEX
+<Multi_key> <i> <I>             : "Î"   Icircumflex # LATIN CAPITAL LETTER I WITH CIRCUMFLEX
+<Multi_key> <I> <I>             : "Î"   Icircumflex # LATIN CAPITAL LETTER I WITH CIRCUMFLEX
+<Multi_key> <i> <O>             : "Ô"   Ocircumflex # LATIN CAPITAL LETTER O WITH CIRCUMFLEX
+<Multi_key> <I> <O>             : "Ô"   Ocircumflex # LATIN CAPITAL LETTER O WITH CIRCUMFLEX
+<Multi_key> <i> <U>             : "Û"   Ucircumflex # LATIN CAPITAL LETTER U WITH CIRCUMFLEX
+<Multi_key> <I> <U>             : "Û"   Ucircumflex # LATIN CAPITAL LETTER U WITH CIRCUMFLEX
+
+# 'n' for tilde'
+<Multi_key> <n> <a>             : "ã"   atilde # LATIN SMALL LETTER A WITH TILDE
+<Multi_key> <N> <a>             : "ã"   atilde # LATIN SMALL LETTER A WITH TILDE
+<Multi_key> <n> <e>             : "ẽ"   etilde # LATIN SMALL LETTER E WITH TILDE
+<Multi_key> <N> <e>             : "ẽ"   etilde # LATIN SMALL LETTER E WITH TILDE
+<Multi_key> <n> <i>             : "ĩ"   itilde # LATIN SMALL LETTER I WITH TILDE
+<Multi_key> <N> <i>             : "ĩ"   itilde # LATIN SMALL LETTER I WITH TILDE
+<Multi_key> <n> <o>             : "õ"   otilde # LATIN SMALL LETTER O WITH TILDE
+<Multi_key> <N> <o>             : "õ"   otilde # LATIN SMALL LETTER O WITH TILDE
+<Multi_key> <n> <u>             : "ũ"   utilde # LATIN SMALL LETTER U WITH TILDE
+<Multi_key> <N> <u>             : "ũ"   utilde # LATIN SMALL LETTER U WITH TILDE
+
+<Multi_key> <n> <A>             : "Ã"   Atilde # LATIN CAPITAL LETTER A WITH TILDE
+<Multi_key> <N> <A>             : "Ã"   Atilde # LATIN CAPITAL LETTER A WITH TILDE
+<Multi_key> <n> <E>             : "Ẽ"   Etilde # LATIN CAPITAL LETTER E WITH TILDE
+<Multi_key> <N> <E>             : "Ẽ"   Etilde # LATIN CAPITAL LETTER E WITH TILDE
+<Multi_key> <n> <I>             : "Ĩ"   Itilde # LATIN CAPITAL LETTER I WITH TILDE
+<Multi_key> <N> <I>             : "Ĩ"   Itilde # LATIN CAPITAL LETTER I WITH TILDE
+<Multi_key> <n> <O>             : "Õ"   Otilde # LATIN CAPITAL LETTER O WITH TILDE
+<Multi_key> <N> <O>             : "Õ"   Otilde # LATIN CAPITAL LETTER O WITH TILDE
+<Multi_key> <n> <U>             : "Ũ"   Utilde # LATIN CAPITAL LETTER U WITH TILDE
+<Multi_key> <N> <U>             : "Ũ"   Utilde # LATIN CAPITAL LETTER U WITH TILDE
+
+## the closest we can get to Alt + C...
+<Multi_key> <c> <c>             : "ç"   ccedilla # LATIN SMALL LETTER C WITH CEDILLA
+<Multi_key> <C> <c>             : "ç"   ccedilla # LATIN SMALL LETTER C WITH CEDILLA
+<Multi_key> <c> <C>             : "Ç"   ccedilla # LATIN CAPITAL LETTER C WITH CEDILLA
+<Multi_key> <C> <C>             : "Ç"   ccedilla # LATIN CAPITAL LETTER C WITH CEDILLA
+<Multi_key> <space> <c>         : "ç"   ccedilla # LATIN SMALL LETTER C WITH CEDILLA
+<Multi_key> <c> <space>         : "ç"   ccedilla # LATIN SMALL LETTER C WITH CEDILLA
+<Multi_key> <space> <C>         : "Ç"   Ccedilla # LATIN CAPITAL LETTER C WITH CEDILLA
+<Multi_key> <C> <space>         : "Ç"   Ccedilla # LATIN CAPITAL LETTER C WITH CEDILLA
