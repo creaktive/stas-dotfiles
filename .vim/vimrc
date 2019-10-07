@@ -208,7 +208,7 @@ let g:tagbar_type_perl = {
 \ }
 
 "set autochdir
-set tags^=./.git/tags
+set tags^=.git/tags
 
 "nnoremap <C-down> :BufExplorer<CR>
 "noremap <C-left> :bprev<CR>
