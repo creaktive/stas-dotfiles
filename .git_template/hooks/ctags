@@ -1,11 +1,14 @@
 #!/bin/sh
+ls -1 .git/tags.*                       \
+    | cut -d . -f 3                     \
+    | xargs -n 1 pkill -P
 set -e
 trap "rm -f .git/tags.$$" EXIT
 ctags -f .git/tags.$$                   \
-    --recurse --totals --tag-relative   \
+    --recurse=yes --tag-relative=yes    \
     --exclude=blib --exclude=.svn       \
     --exclude=.git --exclude='*~'       \
     --extra=q                           \
     --languages=Perl                    \
-    --langmap=Perl:+.t
+    --langmap=Perl:.pl.pm.t
 mv .git/tags.$$ .git/tags
