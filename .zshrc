@@ -41,13 +41,18 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(catimg colorize cpanm dircycle git-extras gnu-utils history-substring-search httpie ssh-agent sudo web-search)
+plugins=(cpanm gnu-utils history-substring-search ssh-agent sudo)
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
 
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
+
+if [[ -f $HOME/.ssh/known_hosts ]]; then
+    hosts=( $( cut -d ' ' -f 1 $HOME/.ssh/known_hosts | cut -d , -f 1 ) )
+    zstyle ':completion:*:hosts' hosts $hosts
+fi
 
 eval $(dircolors $HOME/.dircolors)
 
@@ -57,8 +62,8 @@ export SAVEHIST=100000
 export KEYTIMEOUT=1
 
 ## smart urls
-autoload -U url-quote-magic
-zle -N self-insert url-quote-magic
+# autoload -U url-quote-magic
+# zle -N self-insert url-quote-magic
 
 # bind UP and DOWN arrow keys
 zmodload zsh/terminfo
