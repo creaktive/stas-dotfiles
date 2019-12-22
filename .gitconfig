@@ -36,6 +36,9 @@
     stahp = config oh-my-zsh.hide-status 1
     po = !git push -u origin $(git rev-parse --abbrev-ref HEAD)
     pr = !git pull --rebase
+    st = status
+    stu = status -uno
+    ds = diff --stat
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX
