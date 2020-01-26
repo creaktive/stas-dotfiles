@@ -45,6 +45,9 @@ plugins=(cpanm gnu-utils history-substring-search ssh-agent sudo)
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
 
+# no autoescaping for URLs
+DISABLE_MAGIC_FUNCTIONS=true
+
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
@@ -61,9 +64,7 @@ export HISTSIZE=100000
 export SAVEHIST=100000
 export KEYTIMEOUT=1
 
-## smart urls
-# autoload -U url-quote-magic
-# zle -N self-insert url-quote-magic
+zstyle ':urlglobber' url-other-schema
 
 # bind UP and DOWN arrow keys
 zmodload zsh/terminfo
