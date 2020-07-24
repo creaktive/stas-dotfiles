@@ -39,6 +39,7 @@
     st = status
     stu = status -uno
     ds = diff --stat
+    ch = checkout
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-highlight | less -FRSX
