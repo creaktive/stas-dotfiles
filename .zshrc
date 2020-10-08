@@ -85,6 +85,7 @@ bindkey -M vicmd 'k' history-substring-search-up
 bindkey -M vicmd 'j' history-substring-search-down
 
 alias tb='tmux save-buffer'
+alias ts='eval $( tmux show-env -s | grep "^SSH_" )'
 
 alias grep="grep $GREP_OPTIONS"
 unset GREP_OPTIONS GREP_COLOR

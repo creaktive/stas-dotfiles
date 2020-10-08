@@ -44,6 +44,7 @@
 COLOR tty
 
 # Below, there should be one TERM entry for each termtype that is colorizable
+TERM alacritty
 TERM ansi
 TERM color_xterm
 TERM color-xterm
@@ -105,6 +106,8 @@ TERM st
 TERM st-meta
 TERM st-256color
 TERM st-meta-256color
+TERM tmux
+TERM tmux-256color
 TERM vt100
 TERM xterm
 TERM xterm-new
@@ -211,6 +214,7 @@ EXEC 01;31  # Unix
 
 # Source text
 .h 32
+.hpp 32
 .c 32
 .C 32
 .cc 32
@@ -262,6 +266,12 @@ EXEC 01;31  # Unix
 .tex 32
 .go 32
 .sql 32
+.csv 32
+.sv 32
+.svh 32
+.v 32
+.vh 32
+.vhd 32
 
 ### Multimedia formats
 
@@ -298,6 +308,8 @@ EXEC 01;31  # Unix
 .xwd 33
 .xwd 33
 .yuv 33
+.nef 33 # Nikon RAW format
+.NEF 33
 
 # Audio
 .aac 33
@@ -312,6 +324,7 @@ EXEC 01;31  # Unix
 .mpeg 33
 .mpg 33
 .ogg  33
+.opus 33
 .ra 33
 .wav 33
 
@@ -394,6 +407,7 @@ EXEC 01;31  # Unix
 .z    1;35
 .Z    1;35
 .zip  1;35
+.zst  1;35
 
 # For testing
 .ANSI-30-black 30
@@ -442,7 +456,7 @@ EXEC 01;31  # Unix
 #.ORIG 01;36
 #.swp 01;36
 #.swo 01;36
-#*,v 01;36
+#*.v 01;36
 .bak 01;33
 .BAK 01;33
 .old 01;33
@@ -456,7 +470,7 @@ EXEC 01;31  # Unix
 .ORIG 01;33
 .swp 01;33
 .swo 01;33
-*,v 01;33
+*.v 01;33
 
 # The brightmagenta (Solarized: purple) color is free for you to use for your
 # custom file type
