@@ -1,44 +1,7 @@
-#ANSI_COLORS_ALIASES='\
-#    base00=bright_yellow, on_base00=on_bright_yellow,\
-#    base01=bright_green,  on_base01=on_bright_green, \
-#    base02=black,         on_base02=on_black,        \
-#    base03=bright_black,  on_base03=on_bright_black, \
-#    base0=bright_blue,    on_base0=on_bright_blue,   \
-#    base1=bright_cyan,    on_base1=on_bright_cyan,   \
-#    base2=white,          on_base2=on_white,         \
-#    base3=bright_white,   on_base3=on_bright_white,  \
-#    orange=bright_red,    on_orange=on_bright_red,   \
-#    violet=bright_magenta,on_violet=on_bright_magenta'
-
-{
-    color           => {
-        array       => 'bright_green',      # base01
-        number      => 'cyan',
-        string      => 'cyan',
-        class       => 'yellow',
-        method      => 'blue',
-        undef       => 'green',
-        hash        => 'cyan',
-        regex       => 'red',
-        code        => 'green',
-        glob        => 'bright_red',        # orange
-        vstring     => 'cyan',
-        repeated    => 'bright_magenta',    # violet
-        caller_info => 'bright_green',      # base01
-        weak        => 'magenta',
-        tainted     => 'bright_magenta',    # violet
-        escaped     => 'red',
-    },
-    class           => {
-        inherited   => 'all',
-        universal   => 0,
-    },
-    caller_info     => 1,
-    colored         => 1,
-    deparse         => 1,
-    filters         => {
-        -external   => [qw(DateTime DB Digest URI)],
-    },
-    print_escapes   => 1,
-    return_value    => 'pass',
-};
+caller_info         = 1
+class.inherited     = all
+class.universal     = 0
+deparse             = 1
+filters             = ContentType, DateTime, DB, Digest, URI, Web
+print_escapes       = 1
+theme               = Solarized
