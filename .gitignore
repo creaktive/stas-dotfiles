@@ -6,15 +6,19 @@
 .cpanreporter/
 .cups/
 .docker/
+.dropbox-dist/
 .dropbox/
 .dzil/
 .gnupg/
+.kube/
 .local/
 .matplotlib/
 .mc/
+.mozilla/
 .npm/
 .parallel/
 .perlbrew/
+.pulse/
 .ssh/
 .tor/
 .vscode/
@@ -36,17 +40,26 @@ Splice/
 _BACKUP_/
 perl5/
 
+.ICEauthority
+.Xauthority
 .bash_history
+.bash_logout
+.bashrc
+.depac.env
 .gitlab-api-v4-config
 .lesshst
+.mysql_history
+.node_repl_history
 .pause
 .perlreplhist
 .python_history
 .rainbarf.dat
+.sqlite_history
 .viminfo
 .wget-hsts
-.zcompdump-*
+.zcompdump*
 .zsh_history
 
+**/*.bak
 **/*.log
 **/.DS_Store
