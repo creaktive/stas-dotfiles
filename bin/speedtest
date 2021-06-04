@@ -1,28 +1,31 @@
 #!/usr/bin/env perl
 
 # speedtest - test network speed using speedtest.net
-# (m)'17 [2017-11-13] Copyright H.M.Brand 2014-2018
+# (m)'20 [2020-06-30] Copyright H.M.Brand 2014-2020
 
 require 5.010;
 use strict;
 use warnings;
 
-our $VERSION = "0.20";
+our $VERSION = "0.27";
+our $CMD = $0; $CMD =~ s{.*/}{};
 
 sub usage {
     my $err = shift and select STDERR;
     (my $p = $0) =~ s{.*/}{};
     print <<"EOH";
-usage: $p [ --no-geo | --country=NL ] [ --list | --ping ] [ options ]
+usage: $p [ --no-geo | --country=NL ] [ --list | --ping[=n] ] [ options ]
        --geo          use Geo location (default true) for closest testserver
        --all          include *all* servers (default only in own country)
     -c --country=IS   use ISO country code for closest test server
+       --list-cc      list country codes and countries with server count
     -1 --one-line     show summary in one line
     -C --csv          output in CSV (stamp,id,ping,tests,direction,speed,min,max)
+       --csv-eol-unix EOL = NL (default = CR NL) implies -C
     -P --prtg         output in XML for PRTG
 
     -l --list         list test servers in chosen country sorted by distance
-    -p --ping         list test servers in chosen country sorted by latency
+    -p --ping[=40]    list test servers in chosen country sorted by latency
        --url          show server url in list
 
     -s --server=nnn   use testserver with id nnn
@@ -35,6 +38,7 @@ usage: $p [ --no-geo | --country=NL ] [ --list | --ping ] [ options ]
     -q --quick[=20]   do a      quick test (only the fastest 20 tests)
     -Q --realquick    do a real quick test (only the fastest 10 tests)
     -T --try[=5]      try all tests on the n fastest servers
+    -U --skip-undef   skip results with no actual measurements
 
     -v --verbose[=1]  set verbosity
        --simple       alias for -v0
@@ -67,57 +71,81 @@ my $opt_T = 1;
 my $unit  = [ 1, "bit" ];
 GetOptions (
     "help|h|?"		=> sub { usage (0); },
-    "V|version!"	=> sub { say $VERSION; exit 0; },
+    "V|version!"	=> sub { print "$CMD [$VERSION]\n"; exit 0; },
     "v|verbose:2"	=>    \$opt_v,
       "simple!"		=> sub { $opt_v = 0; },
-      "man"		=> sub { exec "pod2man $0 | nroff -man"; },
-      "info"		=> sub { exec "pod2text $0"; },
+      "man"		=> sub { pod_nroff (); },
+      "info"		=> sub { pod_text  (); },
 
       "all!"		=> \my $opt_a,
     "g|geo!"		=>    \$opt_g,
     "c|cc|country=s"	=>    \$opt_c,
+      "list-cc!"	=> \my $opt_cc,
     "1|one-line!"	=> \my $opt_1,
     "C|csv!"		=> \my $opt_C,
+      "csv-eol-unix|".
+      "csv-eol-nl!"	=> \my $opt_CNL,
     "P|prtg!"		=> \my $opt_P,
 
     "l|list!"		=> \my $list,
-    "p|ping!"		=> \my $ping,
+    "p|ping:40"		=> \my $opt_ping,
       "url:s"		=> \my $url,
       "ip!"		=> \my $ip,
 
     "B|bytes"		=> sub { $unit = [ 8, "byte" ] },
 
     "T|try:5"		=>    \$opt_T,
-    "s|server=s"	=> \my $server,
+    "s|server=s"	=> \my @server,
     "t|timeout=i"	=> \my $timeout,
     "d|download!"	=>    \$opt_d,
     "u|upload!"		=>    \$opt_u,
     "q|quick|fast:20"	=>    \$opt_q,
     "Q|realquick:10"	=>    \$opt_q,
+    "U|skip-undef!"	=> \my $opt_U,
 
     "m|mini=s"		=> \my $mini,
       "source=s"	=> \my $source,	# NYI
     ) or usage (1);
 
+$opt_CNL and $opt_C++;
 $opt_C || $opt_P and $opt_v = 0;
 
 use LWP::UserAgent;
-use XML::Simple;
+use XML::Simple; # Can safely be replaced with XML::LibXML::Simple
 use HTML::TreeBuilder;
+use Term::ANSIColor;
 use Time::HiRes qw( gettimeofday tv_interval );
-use List::Util qw( min max sum first );
-use Socket qw( inet_ntoa );
+use List::Util  qw( first sum );
+use Socket      qw( inet_ntoa );
 use Math::Trig;
+
+sub pod_text {
+    require Pod::Text::Color;
+    my $m = $ENV{NO_COLOR} ? "Pod::Text" : "Pod::Text::Color";
+    my $p = $m->new ();
+    open my $fh, ">", \my $out;
+    $p->parse_from_file ($0, $fh);
+    close $fh;
+    print $out;
+    exit 0;
+    } # pod_text
+
+sub pod_nroff {
+    first { -x "$_/nroff" } grep { -d } split m/:+/ => $ENV{PATH} or pod_text ();
+
+    require Pod::Man;
+    my $p = Pod::Man->new ();
+    open my $fh, "|-", "nroff", "-man";
+    $p->parse_from_file ($0, $fh);
+    close $fh;
+    exit 0;
+    } # pod_nroff
 
 # Debugging. Prefer Data::Peek over Data::Dumper if available
 {   use Data::Dumper;
-    my $dp = 0;
-    eval q{
-	use Data::Peek;
-	$dp = 1;
-	};
+    my $dp = eval { require Data::Peek; 1; };
     sub ddumper {
-	$dp ? DDumper (@_)
+	$dp ? Data::Peek::DDumper (@_)
 	    : print STDERR Dumper (@_);
 	} # ddumper
     }
@@ -153,7 +181,7 @@ $opt_v > 3 and ddumper {
 if ($url || $mini) {
     $opt_g   = 0;
     $opt_c   = "";
-    $server  = "";
+    @server  = ();
     my $ping    = 0.05;
     my $name    = "";
     my $sponsor = "CLI";
@@ -168,8 +196,8 @@ if ($url || $mini) {
 	for ($tree->look_down (_tag => "script")) {
 	    my $c = ($_->content)[0] or next;
 	    ref $c eq "ARRAY" && $c->[0] &&
-		$c->[0] =~ m/\b (?: upload_? | config ) Extension
-			     \s*: \s* "? ([^"\s]+) /xi or next;
+		$c->[0] =~ m{\b (?: upload_? | config ) Extension
+			     \s*: \s* "? ([^"\s]+) }xi or next;
 	    $ext = $1;
 	    last;
 	    }
@@ -204,11 +232,11 @@ if ($url || $mini) {
 	};
     }
 
-if ($server) {
+if (@server) {
     $opt_c = "";
     $opt_a = 1;
-    unless ($server =~ m{^[0-9]+$}) {
-	open my $fh, "<", $server or die;#usage (1);
+    unless ($server[0] =~ m{^[0-9]+$}) {
+	open my $fh, "<", $server[0] or die;#usage (1);
 	my $data = do { local $/; <$fh>; };
 	print $data;
 	$data =~ m/^\s*\{\s*(['"]?)cc\1\s*=>\s*(["'])[A-Z]{1,3}\2\s*,/ &&
@@ -256,27 +284,44 @@ else {
     $opt_c ||= "IS";	# Iceland seems like a nice default :P
     }
 
+if ($opt_cc) {
+    my %sl = get_servers ();
+    my %cc;
+    foreach my $s (values %sl) {
+	my $cc = $s->{cc};
+	$cc{$cc} //= { cc => $cc, country => $s->{country}, count => 0 };
+	$cc = $cc{$cc};
+	$cc->{count}++;
+	}
+    for (sort { $a->{cc} cmp $b->{cc} } values %cc) {
+	printf "%2s %-32s %4d\n", $_->{cc}, $_->{country}, $_->{count};
+	}
+    exit 0;
+    }
+
 if ($list) {
     my %list = servers ();
     my @fld = qw( id sponsor name dist );
-    my $fmt = "%5d: %-30.30s %-15.15s %7.2f km\n";
+    my $fmt = "%3d: %5d - %-30.30s %-15.15s %7.2f km\n";
     if (defined $url) {
 	push @fld, "url0";
 	$fmt .= "       %s\n";
 	}
-    printf $fmt, @{$list{$_}}{@fld}
+    my $idx = 1;
+    printf $fmt, $idx++, @{$list{$_}}{@fld}
 	for sort { $list{$a}{dist} <=> $list{$b}{dist} } keys %list;
     exit 0;
     }
 
-if ($ping) {
+if ($opt_ping) {
     my @fld = qw( id sponsor name dist ping );
-    my $fmt = "%5d: %-30.30s %-15.15s %7.2f km %7.0f ms\n";
+    my $fmt = "%3d: %5d - %-30.30s %-15.15s %7.2f km %7.0f ms\n";
     if (defined $url) {
 	push @fld, "url0";
 	$fmt .= "       %s\n";
 	}
-    printf $fmt, @{$_}{@fld} for servers_by_ping ();
+    my $idx = 1;
+    printf $fmt, $idx++, @{$_}{@fld} for servers_by_ping ();
     exit 0;
     }
 
@@ -287,6 +332,7 @@ $opt_P and print qq{<?xml version="1.0" encoding="UTF-8" ?>\n<prtg>\n},
 # default action is to run on fastest server
 my @srvrs = $url ? ($url) : servers_by_ping ();
 my @hosts = grep { $_->{ping} < 1000 } @srvrs;
+@server and $opt_T = @server;
 @hosts > $opt_T and splice @hosts, $opt_T;
 my @try;
 foreach my $host (@hosts) {
@@ -373,7 +419,10 @@ foreach my $host (@hosts) {
 
 	$ul = result ("Upload", $host, scalar @size, @rslt);
 	}
-    push @try => [ $host, $dl, $ul, $dl + $ul ];
+    my $sum   = $dl eq "-" ? 0 : $dl;
+       $sum  += $ul eq "-" ? 0 : $ul;
+       $sum ||= "-";
+    push @try => [ $host, $dl, $ul, $sum ];
     $opt_1 and print "DL: $dl M$unit->[1]/s, UL: $ul M$unit->[1]/s, SRV: $host->{id}\n";
     }
 $opt_P and print "  </prtg>\n";
@@ -393,17 +442,21 @@ sub result {
 
     my $size = (sum map { $_->[0] } @rslt) //         0;
     my $time = (sum map { $_->[1] } @rslt) //         0;
-    my $slow = (min map { $_->[2] } @rslt) //         0.000;
-    my $fast = (max map { $_->[2] } @rslt) // 999999999.999;
+
+    my @speed = sort { $a <=> $b } grep { $_ } map { $_->[2] } @rslt;
+    $opt_U && @speed == 0 and return;
+
+    my $slow = $speed[ 0] //         0.000;
+    my $fast = $speed[-1] // 999999999.999;
 
     my $sp = sprintf "%8.3f", 8 * ($size / ($time || 1)) / $k / $k / $unit->[0];
     if ($opt_C) {
 	my @d = localtime;
 	# stamp,id,ping,tests,direction,speed)
-	printf qq{"%4d-%02d-%02d %02d:%02d:%02d",%d,%.2f,%d,%.1s,%.2f,%.2f,%.2f\r\n},
+	printf qq{"%4d-%02d-%02d %02d:%02d:%02d",%d,%.2f,%d,%.1s,%.2f,%.2f,%.2f%s},
 	    $d[5] + 1900, ++$d[4], @d[3,2,1,0],
 	    $host->{id}, $host->{ping},
-	    $n, $dir, $sp, $slow, $fast;
+	    $n, $dir, $sp, $slow, $fast, $opt_CNL ? "\n" : "\r\n";
 	}
     elsif ($opt_P) {
 	printf do { join "\n", map { "  $_" }
@@ -487,7 +540,7 @@ sub distance {
 	    cos (deg2rad ($lat_c)) * cos (deg2rad ($lat_s)) *
 		sin ($dlon / 2) * sin ($dlon / 2);
 
-    return 6371 * 2 * atan2 (sqrt ($x), sqrt (1 - $x)); # km
+    return $rad * 2 * atan2 (sqrt ($x), sqrt (1 - $x)); # km
     } # distance
 
 sub servers {
@@ -519,14 +572,15 @@ sub servers_by_ping {
 	timeout      => $timeout,
 	);
     $pa->env_proxy;
-    if (@list > 40) {
+    $opt_ping ||= 40;
+    if (@list > $opt_ping) {
 	@list = sort { $a->{dist} <=> $b->{dist} } @list;
-	splice @list, 40;
+	@server or splice @list, $opt_ping;
 	}
     foreach my $h (@list) {
 	my $t = 0;
-	if ($server and $h->{id} != $server) {
-	    $h->{ping} = 40000;
+	if (@server and not first { $h->{id} == $_ } @server) {
+	    $h->{ping} = 999999;
 	    next;
 	    }
 	$opt_v > 5 and printf STDERR "? %4d %-20.20s %s\n",
@@ -545,8 +599,8 @@ sub servers_by_ping {
 	    }
 	$h->{ping} = $t * 1000; # report in ms
 	}
-    return sort { $a->{ping} <=> $b->{ping}
-	       || $a->{dist} <=> $b->{dist} } @list;
+    sort { $a->{ping} <=> $b->{ping}
+        || $a->{dist} <=> $b->{dist} } @list;
     } # servers_by_ping
 
 __END__
@@ -578,7 +632,7 @@ flash is not required
 It was written to feature the functionality that speedtest.net offers
 without the overhead of flash or java and the need of a browser.
 
-=head1 Raison-d'être
+=head1 Raison-d'Ãªtre
 
 The tool is there to give you a quick indication of the achievable
 throughput of your current network. That can drop dramatically if
@@ -592,6 +646,7 @@ decisions in choosing the server based on distance instead of speed. That
 B<does> matter if one has fiber lines. I prefer speed over distance.
 
 =head1 Command-line Arguments
+X<CLIA>
 
 =over 2
 
@@ -654,6 +709,72 @@ Pass the ISO country code to select the servers
  $ speedtest --cc=B ...
  $ speedtest --country=D ...
 
+=item --list-cc
+X<--list-cc>
+
+Fetch the server list and then show the list of countries the servers are
+located with their country code and server count
+
+ $ speedtest --list-cc
+ AD Andorra                             1
+ AE United Arab Emirates                4
+ :
+ ZW Zimbabwe                            6
+
+You can then use that code to list the servers in the chosen country, as
+described below.
+
+=item -l | --list
+X<-l>
+X<--list>
+
+This option will show all servers in the selection with the distance in
+kilometers to the server.
+
+ $ speedtest --list --country=IS
+   1: 10661 - Tengir hf              Akureyri    1980.02 km
+   2: 21605 - Premis ehf             Reykjavík   2039.16 km
+   3:  3684 - Nova                   Reykjavik   2039.16 km
+   4:  6471 - Gagnaveita Reykjavikur Reykjavik   2039.16 km
+   5: 10650 - Nova VIP               Reykjavik   2039.16 km
+   6: 16148 - Hringidan              Reykjavik   2039.16 km
+   7:  4818 - Siminn                 Reykjavik   2039.16 km
+   8: 17455 - Hringdu                Reykjavík   2039.16 km
+   9:  4141 - Vodafone               Reykjavík   2039.16 km
+  10:  3644 - Snerpa                 Isafjordur  2192.27 km
+
+=item -p | --ping | --ping=40
+X<-p>
+X<--ping>
+
+Show a list of servers in the selection with their latency in ms.
+Be very patient if running this with L</--all>.
+
+ $ speedtest --ping --cc=BE
+   1:  4320 - EDPnet               Sint-Niklaas     148.06 km      52 ms
+   2: 12627 - Proximus             Brussels         173.04 km      55 ms
+   3: 10986 - Proximus             Schaarbeek       170.54 km      55 ms
+   4: 15212 - Telenet BVBA/SPRL    Mechelen         133.89 km      57 ms
+   5: 29238 - Arcadiz              DIEGEM           166.33 km      58 ms
+   6:  5151 - Combell              Brussels         173.04 km      59 ms
+   7: 26887 - Arxus NV             Brussels         173.04 km      64 ms
+   8:  4812 - Universite Catholiqâ¦ Louvain-La-Neuv  186.87 km      70 ms
+   9:  2848 - Cu.be Solutions      Diegem           166.33 km      75 ms
+  10: 12306 - VOO                  Liège            186.26 km      80 ms
+  11: 24261 - Une Nouvelle Villeâ¦  Charleroi        217.48 km     147 ms
+  12: 30594 - Orange Belgium       Evere            169.29 km     150 ms
+
+If a server does not respond, a very high latency is used as default.
+
+This option only shows the 40 nearest servers. The number can be changed
+as optional argument.
+
+ $ speedtest --cc=BE --ping=4
+   1:  4320 - EDPnet               Sint-Niklaas     148.06 km      53 ms
+   2: 29238 - Arcadiz              DIEGEM           166.33 km      57 ms
+   3: 15212 - Telenet BVBA/SPRL    Mechelen         133.89 km      62 ms
+   4:  2848 - Cu.be Solutions      Diegem           166.33 km      76 ms
+
 =item -1 | --one-line
 X<-1>
 X<--ono-line>
@@ -691,6 +812,13 @@ The reported fields are
  "2015-01-24 17:15:09",4358,63.97,40,D,93.45,30.39,136.93
  "2015-01-24 17:15:14",4358,63.97,40,U,92.67,31.10,143.06
 
+=item -U | --skip-undef
+X<-U>
+X<--skip-undef>
+
+Skip reporting measurements that have no speed recordings at all.
+The default is to report these as C<0.00> .. C<999999999.999>.
+
 =item -P | --prtg
 X<-P>
 X<--prtg>
@@ -721,48 +849,17 @@ Generate the measurements in XML suited for PRTG
      </result>
    </prtg>
 
-=item -l | --list
-X<-l>
-X<--list>
-
-This option will show all servers in the selection with the distance in
-kilometers to the server.
-
- $ speedtest --list --country=IS
- 4998: GreenQloud                     Hafnarfjordur   2066.12 km
- 4141: Vodafone                       Reykjav�k       2068.59 km
- 4820: 365                            Reykjav�k       2068.59 km
- 4818: Siminn                         Reykjavik       2068.59 km
- 1092: Hringidan ehf                  Reykjavik       2068.59 km
- 3684: Nova                           Reykjavik       2068.59 km
- 3644: Snerpa                         Isafjordur      2222.57 km
-
-=item -p | --ping
-X<-p>
-X<--ping>
-
-Show a list of servers in the selection with their latency in ms.
-Be very patient if running this with L</--all>.
-
- $ speedtest --ping --cc=BE
- 5151: Combell                        Brussels         148.45 km     120 ms
- 4812: Universite Catholique de Louva Louvain-La-Neuv  159.41 km     122 ms
- 2419: VOO                            Liege            154.15 km     131 ms
- 4904: Verixi SPRL                    Louvain-La-Neuv  159.41 km     137 ms
- 4320: EDPnet                         Sint-Niklaas     128.45 km     258 ms
- 4319: Mobistar NV                    Evere            145.15 km     308 ms
- 3457: iGlobe bvba                    Diegem           141.28 km     340 ms
- 5867: Teleweb                        Lokeren          141.00 km     541 ms
- 2955: Nucleus BVBA                   Antwerp          111.57 km 4000000 ms
- 2848: Cu.be Solutions                Diegem           141.28 km 4000000 ms
-
-If a server does not respond, a very high latency is used as default.
-
-=item --url=XXX
+=item --url[=XXX]
 X<--url>
+
+With no value, show server url in list
+
+With value, use specific server url: do not scan available servers
 
 =item --ip
 X<--ip>
+
+Show IP for server
 
 =item -T[#] | --try[=#]
 X<-T>
@@ -774,39 +871,34 @@ to do all required tests.
  $ speedtest -T3 -c NL -Q2
  Testing for 80.x.y.z : XS4ALL Internet BV (NL)
 
- Using 4358:  52.33 km      64 ms KPN
- Test download ..                                      Download:   30.497 Mbit/s
- Test upload   ..                                      Upload:     32.366 Mbit/s
+ Using 13218:  26.52 km      25 ms XS4ALL Internet BV
+ Test download ..                                      Download     31.807 Mbit/s
+ Test upload   ..                                      Upload       86.587 Mbit/s
 
- Using 4045:  52.33 km      66 ms SoftLayer Technologies, Inc.
- Test download ..                                      Download:   31.971 Mbit/s
- Test upload   ..                                      Upload:     33.503 Mbit/s
+ Using 15850:  26.09 km      25 ms QTS Data Centers
+ Test download ..                                      Download     80.763 Mbit/s
+ Test upload   ..                                      Upload       77.122 Mbit/s
 
- Using 3386:  52.33 km      67 ms NFOrce Entertainment B.V.
- Test download ..                                      Download:   28.022 Mbit/s
- Test upload   ..                                      Upload:     33.221 Mbit/s
+ Using 11365:  26.09 km      27 ms Vancis
+ Test download ..                                      Download    106.022 Mbit/s
+ Test upload   ..                                      Upload       82.891 Mbit/s
 
- $ speedtest -1v0 -T20
- DL:  156.770 Mbit/s, UL:  119.062 Mbit/s, SRV: 4045
- DL:  161.597 Mbit/s, UL:  146.166 Mbit/s, SRV: 11365
- DL:  126.760 Mbit/s, UL:  158.364 Mbit/s, SRV: 7214
- DL:  156.002 Mbit/s, UL:  134.162 Mbit/s, SRV: 1747
- DL:  157.777 Mbit/s, UL:  136.393 Mbit/s, SRV: 8781
- DL:  157.156 Mbit/s, UL:  148.259 Mbit/s, SRV: 3386
- DL:  161.146 Mbit/s, UL:  127.229 Mbit/s, SRV: 4601
- DL:  151.952 Mbit/s, UL:   60.200 Mbit/s, SRV: 8796
- DL:  161.785 Mbit/s, UL:  147.689 Mbit/s, SRV: 10389
- DL:  154.803 Mbit/s, UL:  132.616 Mbit/s, SRV: 7095
- DL:  161.037 Mbit/s, UL:  111.231 Mbit/s, SRV: 9182
- DL:  162.592 Mbit/s, UL:  117.063 Mbit/s, SRV: 5124
- DL:   98.290 Mbit/s, UL:  132.075 Mbit/s, SRV: 11611
- DL:  162.779 Mbit/s, UL:   83.317 Mbit/s, SRV: 6554
- DL:  161.629 Mbit/s, UL:  136.288 Mbit/s, SRV: 5972
- DL:  163.780 Mbit/s, UL:  160.336 Mbit/s, SRV: 3587
- DL:  160.815 Mbit/s, UL:  134.978 Mbit/s, SRV: 5302
- DL:  160.254 Mbit/s, UL:   85.926 Mbit/s, SRV: 5692
- DL:  160.328 Mbit/s, UL:   95.659 Mbit/s, SRV: 1208
- DL:  159.438 Mbit/s, UL:   95.040 Mbit/s, SRV: 1671
+ Rank 01: Server:  11365   26.09 km      27 ms,  DL:  106.022 UL:   82.891
+ Rank 02: Server:  15850   26.09 km      25 ms,  DL:   80.763 UL:   77.122
+ Rank 03: Server:  13218   26.52 km      25 ms,  DL:   31.807 UL:   86.587
+
+ $ speedtest -1v0 -T5
+ DL:  200.014 Mbit/s, UL:  159.347 Mbit/s, SRV: 13218
+ DL:  203.599 Mbit/s, UL:  166.247 Mbit/s, SRV: 15850
+ DL:  207.249 Mbit/s, UL:  134.957 Mbit/s, SRV: 11365
+ DL:  195.490 Mbit/s, UL:  172.109 Mbit/s, SRV: 5972
+ DL:  179.413 Mbit/s, UL:  160.309 Mbit/s, SRV: 2042
+
+ Rank 01: Server:  15850   26.09 km      30 ms,  DL:  203.599 UL:  166.247
+ Rank 02: Server:   5972   26.09 km      32 ms,  DL:  195.490 UL:  172.109
+ Rank 03: Server:  13218   26.52 km      23 ms,  DL:  200.014 UL:  159.347
+ Rank 04: Server:  11365   26.09 km      31 ms,  DL:  207.249 UL:  134.957
+ Rank 05: Server:   2042   51.41 km      33 ms,  DL:  179.413 UL:  160.309
 
 =item -s# | --server=# | --server=filename
 X<-s>
@@ -814,7 +906,7 @@ X<--server>
 
 Specify the ID of the server to test against. This ID can be taken from the
 output of L</--list> or L</--ping>. Using this option prevents fetching the
-complete server list and calculation of distances. It also enables you to
+complete server list and calculation of distances.  It also enables you to
 always test against the same server.
 
  $ speedtest -1s4358
@@ -824,9 +916,32 @@ always test against the same server.
  Test upload   ........................................Upload:     92.552 Mbit/s
  DL:   92.633 Mbit/s, UL:   92.552 Mbit/s
 
+This argument may be repeated to test against multile servers,  more or less
+like specifying your own top x (as with C<-T>).
+
+ $ speedtest -s 22400 -s 1208 -s 13218
+ Testing for 185.x.y.z : Freedom Internet BV ()
+
+ Using 13218:  80.15 km      32 ms XS4ALL Internet BV
+ Test download ........................................Download    66.833 Mbit/s
+ Test upload   ........................................Upload     173.317 Mbit/s
+
+ Using  1208:  51.19 km      37 ms Qweb | Full-Service Hosting
+ Test download ........................................Download    52.077 Mbit/s
+ Test upload   ........................................Upload     195.833 Mbit/s
+
+ Using 22400:  80.15 km      46 ms Usenet.Farm
+ Test download ........................................Download    96.341 Mbit/s
+ Test upload   ........................................Upload     203.306 Mbit/s
+
+ Rank 01: Server:  22400   80.15 km      46 ms,  DL:   96.341 UL:  203.306
+ Rank 02: Server:   1208   51.19 km      37 ms,  DL:   52.077 UL:  195.833
+ Rank 03: Server:  13218   80.15 km      32 ms,  DL:   66.833 UL:  173.317
+
 If you pass a filename, it is expected to reflect a server-like structure as
 received from the speedtest server-list, possibly completed with upload- and
-download URL's:
+download URL's. You can only pass one filename not consisting of all digits.
+If you do, all remaining C<-s> arguments are ignored.
 
   {   cc      => "NL",
       country => "Netherlands",
@@ -902,7 +1017,7 @@ NYI - mentioned for speedtest-cli compatibility
 
 =head1 EXAMPLES
 
-See L</SYNOPSIS> and L</Command-line arguments>
+See L</SYNOPSIS> and L<Command-line arguments|/CLIA>
 
 =head1 DIAGNOSTICS
 
@@ -962,26 +1077,24 @@ L<github issues|https://github.com/Tux/speedtest/issues>.
 
 I will never accept pull request that do not strictly conform to my
 style, however you might hate it. You can read the reasoning behind
-my preferences L<here|http://tux.nl/style.html>.
+my preferences L<here|https://tux.nl/style.html>.
 
 I really don't care about mixed spaces and tabs in (leading) whitespace
 
 =head1 WARRANTY
 
-This tool is by no means a guarantee to show the correc6t speeds. It
+This tool is by no means a guarantee to show the correct speeds. It
 is only to be used as an indication of the throughput of your internet
 connection. The values shown cannot be used in a legal debate.
 
 =head1 AUTHOR
 
-H.Merijn Brand F<E<lt>h.m.brand@xs4all.nlE<gt>> wrote this for his own
+H.Merijn Brand F<E<lt>linux@tux.freedom.nlE<gt>> wrote this for his own
 personal use, but was asked to make it publicly available as application.
 
-=head1 COPYRIGHT
+=head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014-2018 H.Merijn Brand
-
-=head1 LICENSE
+Copyright (C) 2014-2020 H.Merijn Brand
 
 This software is free; you can redistribute it and/or modify
 it under the same terms as Perl itself.
