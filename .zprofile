@@ -17,5 +17,9 @@ if [ `uname` = "Darwin" ]; then
         export CPPFLAGS=-I/usr/local/opt/curl/include
         export PKG_CONFIG_PATH=/usr/local/opt/curl/lib/pkgconfig
     fi
+    if [ -e "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc" ]; then
+        source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc"
+        source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc"
+    fi
     ssh-add -A &> /dev/null
 fi
