@@ -5,3 +5,5 @@ deparse             = 1
 filters             = ContentType, DateTime, DB, Digest, URI, Web
 print_escapes       = 1
 theme               = Solarized
+array_max           = 1000
+hash_max            = 1000
