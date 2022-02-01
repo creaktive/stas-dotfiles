@@ -21,5 +21,8 @@ if [ `uname` = "Darwin" ]; then
         source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc"
         source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc"
     fi
+    if [ -x /usr/local/opt/mysql-client/bin/mysql ]; then
+        export PATH="/usr/local/opt/mysql-client/bin:$PATH"
+    fi
     ssh-add -A &> /dev/null
 fi
