@@ -11,6 +11,9 @@ if [ -e "$HOME/.profile" ]; then
 fi
 
 if [ `uname` = "Darwin" ]; then
+    if [ -x /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
     if [ -x /usr/local/opt/curl/bin/curl ]; then
         export PATH="/usr/local/opt/curl/bin:$PATH"
         export LDFLAGS=-L/usr/local/opt/curl/lib
