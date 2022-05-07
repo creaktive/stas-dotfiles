@@ -47,12 +47,12 @@ plugins=(
     gnu-utils
     ssh-agent
     sudo
-    zsh-autosuggestions
 )
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
 source $HOME/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#657b83"
+source $HOME/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # # no autoescaping for URLs
 # DISABLE_MAGIC_FUNCTIONS=true
