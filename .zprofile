@@ -1,6 +1,8 @@
 if [ `uname` = "Darwin" ]; then
     if [ -x /opt/homebrew/bin/brew ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
     fi
     if [ -x "$HOMEBREW_PREFIX/opt/curl/bin/curl" ]; then
         export PATH="$HOMEBREW_PREFIX/opt/curl/bin:$PATH"
@@ -12,8 +14,8 @@ if [ `uname` = "Darwin" ]; then
         source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc"
         source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc"
     fi
-    if [ -x "$HOMEBREW_PREFIX/mysql-client/bin/mysql" ]; then
-        export PATH="$HOMEBREW_PREFIX/mysql-client/bin:$PATH"
+    if [ -x "$HOMEBREW_PREFIX/opt/mysql-client/bin/mysql" ]; then
+        export PATH="$HOMEBREW_PREFIX/opt/mysql-client/bin:$PATH"
     fi
     ssh-add -A &> /dev/null
 fi
