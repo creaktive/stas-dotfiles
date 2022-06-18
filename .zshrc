@@ -41,8 +41,13 @@ COMPLETION_WAITING_DOTS="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(
+    ag
+    colored-man-pages
     cpanm
     docker
+    fancy-ctrl-z
+    fzf
+    gh
     git
     gnu-utils
     ssh-agent
@@ -103,7 +108,6 @@ unset GREP_OPTIONS GREP_COLOR
 if which bat &>/dev/null; then
     alias cat='bat -P'
 fi
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 if [ `uname` = "Darwin" ]; then
     alias dm='sudo dmesg'
