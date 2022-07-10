@@ -107,6 +107,8 @@ unset GREP_OPTIONS GREP_COLOR
 
 if which bat &>/dev/null; then
     alias cat='bat -P'
+elif which batcat &>/dev/null; then
+    alias cat='batcat -P'
 fi
 
 if [ `uname` = "Darwin" ]; then
