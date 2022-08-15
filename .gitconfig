@@ -64,8 +64,8 @@
 [rebase]
     autoStash = true
 
-[interactive]
-    diffFilter = diff-so-fancy --patch
+#[interactive]
+#    diffFilter = diff-so-fancy --patch
 
 [diff-so-fancy]
     markEmptyLines = false
