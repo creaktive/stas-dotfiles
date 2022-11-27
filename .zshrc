@@ -111,6 +111,10 @@ elif which batcat &>/dev/null; then
     alias cat='batcat -P'
 fi
 
+if which starship &>/dev/null; then
+    eval "$(starship init zsh)"
+fi
+
 if [ `uname` = "Darwin" ]; then
     alias dm='sudo dmesg'
 else
