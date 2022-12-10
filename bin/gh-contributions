@@ -35,8 +35,15 @@ sub main($login) {
         grep { $_->[0] ge $start }
         @$calendar;
 
+    my $streak = 0;
+    for my $day (reverse @$calendar) {
+        last unless $day->[1];
+        $streak++;
+    }
+
     say "@{[ BOLD . sum(@month) . RESET ]} this month";
     say "@{[ BOLD .  $month[-1] . RESET ]} today";
+    say "@{[ BOLD .     $streak . RESET ]} days streak";
 
     return 0;
 }
