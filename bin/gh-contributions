@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+use 5.036;
+
+use HTTP::Tiny ();
+use List::Util qw(sum);
+use Term::ANSIColor qw(:constants);
+use Time::Piece;
+
+sub fetch_calendar($login) {
+    my $url = "https://github.com/users/$login/contributions";
+    my $response = HTTP::Tiny->new(verify_SSL => 1)->get($url);
+    die $response->{reason} unless $response->{success};
+
+    my $parser = qr{
+        <rect [^>]+
+            \b class="ContributionCalendar-day" [^>]+
+            \b data-count="(?<count> \d+)" [^>]+
+            \b data-date="(?<date> \d{4}-\d{2}-\d{2})" [^>]*
+        >
+    }x;
+
+    my @calendar;
+    push @calendar => [$+{date}, 0 + $+{count}]
+        while $response->{content} =~ m{$parser}gosx;
+
+    return \@calendar;
+}
+
+sub main($login) {
+    my $calendar = fetch_calendar($login || 'creaktive');
+    my $start = localtime->truncate(to => 'month')->ymd;
+
+    my @month =
+        map { $_->[1] }
+        grep { $_->[0] ge $start }
+        @$calendar;
+
+    say "@{[ BOLD . sum(@month) . RESET ]} this month";
+    say "@{[ BOLD .  $month[-1] . RESET ]} today";
+
+    return 0;
+}
+
+exit main($ARGV[0]);
