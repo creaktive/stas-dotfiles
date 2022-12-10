@@ -1,5 +1,8 @@
 #!/usr/bin/env perl
-use 5.036;
+use 5.024;
+use experimental qw(signatures);
+use warnings qw(all);
+no warnings qw(experimental::signatures);
 
 use HTTP::Tiny ();
 use List::Util qw(sum);
