@@ -6,6 +6,7 @@ no warnings qw(experimental::signatures);
 
 use HTTP::Tiny ();
 use List::Util qw(sum);
+use Scalar::Util qw(looks_like_number);
 use Term::ANSIColor qw(:constants);
 use Time::Piece;
 
@@ -17,14 +18,15 @@ sub fetch_calendar($login) {
     my $parser = qr{
         <rect [^>]+
             \b class="ContributionCalendar-day" [^>]+
-            \b data-count="(?<count> \d+)" [^>]+
             \b data-date="(?<date> \d{4}-\d{2}-\d{2})" [^>]*
-        >
+        > (?<count> \w+)
     }x;
 
     my @calendar;
-    push @calendar => [$+{date}, 0 + $+{count}]
-        while $response->{content} =~ m{$parser}gosx;
+    push @calendar => [
+        $+{date},
+        looks_like_number($+{count}) ? 0 + $+{count} : 0
+    ] while $response->{content} =~ m{$parser}gosx;
 
     return \@calendar;
 }
