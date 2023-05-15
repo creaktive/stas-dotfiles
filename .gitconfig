@@ -35,12 +35,14 @@
     g = grep --break --heading --line-number --context 1 --show-function
     stahp = config oh-my-zsh.hide-status 1
     po = !git push -u origin $(git rev-parse --abbrev-ref HEAD)
-    pr = !git pull --rebase
+    pr = pull --rebase
     st = status
     stu = status -uno
     ds = diff --stat
     ch = checkout
     br = branch
+    su = submodule update --remote --rebase --recursive
+    cu = gc --prune=now --aggressive
 [core]
     excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-so-fancy | less --tabs=4 -FRSX
