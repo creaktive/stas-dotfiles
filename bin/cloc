@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # cloc -- Count Lines of Code                  {{{1
-# Copyright (C) 2006-2021 Al Danial <al.danial@gmail.com>
+# Copyright (C) 2006-2023 Al Danial <al.danial@gmail.com>
 # First release August 2006
 #
 # Includes code from:
@@ -8,14 +8,17 @@
 #     http://www.dwheeler.com/sloccount/
 #     by David Wheeler.
 #   - Regexp::Common v2017060201
-#     http://search.cpan.org/~abigail/Regexp-Common-2017060201/lib/Regexp/Common.pm
+#     https://metacpan.org/pod/Regexp::Common
 #     by Damian Conway and Abigail.
-#   - Win32::Autoglob
-#     http://search.cpan.org/~sburke/Win32-Autoglob-1.01/Autoglob.pm
+#   - Win32::Autoglob 1.01
+#     https://metacpan.org/pod/Win32::Autoglob
 #     by Sean M. Burke.
-#   - Algorithm::Diff
-#     http://search.cpan.org/~tyemq/Algorithm-Diff-1.1902/lib/Algorithm/Diff.pm
+#   - Algorithm::Diff 1.1902
+#     https://metacpan.org/pod/Algorithm::Diff
 #     by Tye McQueen.
+#   - Text::Glob 0.11
+#     https://metacpan.org/pod/Text::Glob
+#     by Richard Clamp.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,9 +32,9 @@
 # <http://www.gnu.org/licenses/gpl.txt>.
 #
 # 1}}}
-my $VERSION = "1.90";  # odd number == beta; even number == stable
+my $VERSION = "1.97";  # odd number == beta; even number == stable
 my $URL     = "github.com/AlDanial/cloc";  # 'https://' pushes header too wide
-require 5.006;
+require 5.10.0;
 # use modules                                  {{{1
 use warnings;
 use strict;
@@ -83,6 +86,15 @@ if (defined $Algorithm::Diff::VERSION) {
     $HAVE_Algorith_Diff = 1;
 } else {
     Install_Algorithm_Diff();
+}
+
+my $HAVE_Win32_Long_Path = 0;
+# Win32::LongPath is an optional dependency that when available on
+# Windows will be used to support reading files past the 255 char
+# path length limit.
+eval "use Win32::LongPath;";
+if (defined $Win32::LongPath::VERSION) {
+    $HAVE_Win32_Long_Path = 1;
 }
 # print "2 HAVE_Algorith_Diff = $HAVE_Algorith_Diff\n";
 # test_alg_diff($ARGV[$#ARGV - 1], $ARGV[$#ARGV]); die;
@@ -211,7 +223,18 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
                              see a sample.)  The language identifier at the
                              end of each line is ignored.  This enables --diff
                              mode and bypasses file pair alignment logic.
-                             See also --config.
+                             Use --diff-list-files to define the file name
+                             pairs in separate files. See also --config.
+   --diff-list-files <file1> <file2>
+                             Compute differences in code and comments between
+                             the files and directories listed in <file1> and
+                             <file2>.  Each input file should use the same
+                             format as --list-file, where there is one file or
+                             directory name per line.  Only exact matches are
+                             counted; relative path names will be resolved
+                             starting from the directory where cloc is invoked.
+                             This enables --diff mode.  See also --list-file,
+                             --diff-list-file, --diff.
    --vcs=<VCS>               Invoke a system call to <VCS> to obtain a list of
                              files to work on.  If <VCS> is 'git', then will
                              invoke 'git ls-files' to get a file list and
@@ -362,9 +385,12 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
                              such as GNU autoconf.  To see a list of these files
                              (then exit), run with --no-autogen list
                              See also --autoconf.
+   --no-recurse              Count files in the given directories without
+                             recursively descending below them.
    --original-dir            [Only effective in combination with
                              --strip-comments]  Write the stripped files
                              to the same directory as the original files.
+   --only-count-files        Only count files by language.
    --read-binary-files       Process binary files in addition to text files.
                              This is usually a bad idea and should only be
                              attempted with text files that have embedded
@@ -464,6 +490,8 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
                              See also --unix, --show-os.
 
  ${BB}Filter Options${NN}
+   --include-content=<regex> Only count files containing text that matches the
+                             given regular expression.
    --exclude-content=<regex> Exclude files containing text that matches the given
                              regular expression.
    --exclude-dir=<D1>[,D2,]  Exclude the given comma separated directories
@@ -502,9 +530,9 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
                              separated file extensions.  Use --show-ext to
                              see the recognized extensions.
    --include-lang=<L1>[,L2[...]]
-                             Count only the given comma separated languages
-                             L1, L2, L3, et cetera.  Use --show-lang to see
-                             the list of recognized languages.
+                             Count only the given comma separated, case-
+                             insensitive languages L1, L2, L3, et cetera.  Use
+                             --show-lang to see the list of recognized languages.
    --match-d=<regex>         Only count files in directories matching the Perl
                              regex.  For example
                                --match-d='/(src|include)/'
@@ -541,7 +569,8 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
    --skip-win-hidden         On Windows, ignore hidden files.
 
  ${BB}Debug Options${NN}
-   --categorized=<file>      Save names of categorized files to <file>.
+   --categorized=<file>      Save file sizes in bytes, identified languages
+                             and names of categorized files to <file>.
    --counted=<file>          Save names of processed source files to <file>.
    --diff-alignment=<file>   Write to <file> a list of files and file pairs
                              showing which files were added, removed, and/or
@@ -602,8 +631,9 @@ Usage: $script [options] <file(s)/dir(s)/git hash(es)> | <set 1> <set 2> | <repo
                              'euc-kr', 'iso-8859-16'.  Known encodings can be
                              printed with
                                perl -MEncode -e 'print join(\"\\n\", Encode->encodings(\":all\")), \"\\n\"'
-   --hide-rate               Do not show line and file processing rates in the
-                             output header. This makes output deterministic.
+   --hide-rate               Do not show elapsed time, line processing rate, or
+                             file processing rates in the output header. This
+                             makes output deterministic.
    --json                    Write the results as JavaScript Object Notation
                              (JSON) formatted output.
    --md                      Write the results as Markdown-formatted text.
@@ -665,6 +695,7 @@ my (
     $opt_diff                 ,
     $opt_diff_alignment       ,
     $opt_diff_list_file       ,
+    $opt_diff_list_files      ,
     $opt_diff_timeout         ,
     $opt_timeout              ,
     $opt_html                 ,
@@ -677,6 +708,7 @@ my (
     $opt_v                    ,
     $opt_vcs                  ,
     $opt_version              ,
+    $opt_include_content      ,
     $opt_exclude_content      ,
     $opt_exclude_lang         ,
     $opt_exclude_list_file    ,
@@ -751,6 +783,8 @@ my (
     $opt_stat                 ,
     $opt_summary_cutoff       ,
     $opt_skip_leading         ,
+    $opt_no_recurse           ,
+    $opt_only_count_files     ,
    );
 
 my $getopt_success = GetOptions(             # {{{1
@@ -760,6 +794,7 @@ my $getopt_success = GetOptions(             # {{{1
    "counted=s"                               => \$opt_counted             ,
    "include_ext|include-ext=s"               => \$opt_include_ext         ,
    "include_lang|include-lang=s"             => \$opt_include_lang        ,
+   "include_content|include-content=s"       => \$opt_include_content     ,
    "exclude_content|exclude-content=s"       => \$opt_exclude_content     ,
    "exclude_lang|exclude-lang=s"             => \$opt_exclude_lang        ,
    "exclude_dir|exclude-dir=s"               => \$opt_exclude_dir         ,
@@ -772,6 +807,7 @@ my $getopt_success = GetOptions(             # {{{1
    "diff-alignment|diff_alignment=s"         => \$opt_diff_alignment      ,
    "diff-timeout|diff_timeout=i"             => \$opt_diff_timeout        ,
    "diff-list-file|diff_list_file=s"         => \$opt_diff_list_file      ,
+   "diff-list-files|diff_list_files"         => \$opt_diff_list_files     ,
    "timeout=i"                               => \$opt_timeout             ,
    "html"                                    => \$opt_html                ,
    "ignored=s"                               => \$opt_ignored             ,
@@ -836,7 +872,7 @@ my $getopt_success = GetOptions(             # {{{1
    "unix"                                    => \$opt_force_on_unix       ,
    "show_os|show-os"                         => \$opt_show_os             ,
    "skip_archive|skip-archive=s"             => \$opt_skip_archive        ,
-   "max_file_size|max-file-size=i"           => \$opt_max_file_size       ,
+   "max_file_size|max-file-size=f"           => \$opt_max_file_size       ,
    "use_sloccount|use-sloccount"             => \$opt_use_sloccount       ,
    "no_autogen|no-autogen"                   => \$opt_no_autogen          ,
    "git"                                     => \$opt_force_git           ,
@@ -850,6 +886,8 @@ my $getopt_success = GetOptions(             # {{{1
    "stat"                                    => \$opt_stat                ,
    "summary_cutoff|summary-cutoff=s"         => \$opt_summary_cutoff      ,
    "skip_leading|skip-leading:s"             => \$opt_skip_leading        ,
+   "no_recurse|no-recurse"                   => \$opt_no_recurse          ,
+   "only_count_files|only-count-files"       => \$opt_only_count_files    ,
   );
 # 1}}}
 $config_file = $opt_config_file if defined $opt_config_file;
@@ -860,6 +898,7 @@ load_from_config_file($config_file,          # {{{2
                                                 \$opt_counted             ,
                                                 \$opt_include_ext         ,
                                                 \$opt_include_lang        ,
+                                                \$opt_include_content     ,
                                                 \$opt_exclude_content     ,
                                                 \$opt_exclude_lang        ,
                                                 \$opt_exclude_dir         ,
@@ -868,6 +907,7 @@ load_from_config_file($config_file,          # {{{2
                                                 \$opt_extract_with        ,
                                                 \$opt_found               ,
                                                 \$opt_count_diff          ,
+                                                \$opt_diff_list_files     ,
                                                 \$opt_diff                ,
                                                 \$opt_diff_alignment      ,
                                                 \$opt_diff_timeout        ,
@@ -946,6 +986,10 @@ if ($opt_version) {
     printf "$VERSION\n";
     exit;
 }
+my $opt_git = 0;
+$opt_git = 1 if defined($opt_git_diff_all) or
+                defined($opt_git_diff_rel) or
+                (defined($opt_vcs) and ($opt_vcs eq "git"));
 $opt_by_file  = 1 if defined  $opt_by_file_by_lang;
 my $CLOC_XSL = "cloc.xsl"; # created with --xsl
    $CLOC_XSL = "cloc-diff.xsl" if $opt_diff;
@@ -961,8 +1005,8 @@ die unless exclude_dir_validates(\%Exclude_Dir);
 my %Include_Ext = ();
    %Include_Ext = map { $_ => 1 } split(/,/, $opt_include_ext)
         if $opt_include_ext;
-my %Include_Language = ();
-   %Include_Language = map { $_ => 1 } split(/,/, $opt_include_lang)
+my %Include_Language = (); # keys are lower case language names
+   %Include_Language = map { lc($_) => 1 } split(/,/, $opt_include_lang)
         if $opt_include_lang;
 # Forcibly exclude .svn, .cvs, .hg, .git, .bzr directories.  The contents of these
 # directories often conflict with files of interest.
@@ -977,6 +1021,7 @@ $Exclude_Dir{".config"} = 1;
 $opt_count_diff        = defined $opt_count_diff ? 1 : 0;
 $opt_diff              = 1  if $opt_diff_alignment    or
                                $opt_diff_list_file    or
+                               $opt_diff_list_files   or
                                $opt_git_diff_rel      or
                                $opt_git_diff_all      or
                                $opt_git_diff_simindex;
@@ -1032,6 +1077,17 @@ if ($opt_use_sloccount) {
 }
 $opt_vcs = 0 if $opt_force_git;
 
+# replace Windows path separators with /
+if ($ON_WINDOWS) {
+    map { s{\\}{/}g } @ARGV;
+    if ($opt_git) {
+        # PowerShell tab expansion automatically prefixes local directories
+        # with ".\" (now mapped to "./").   git ls-files output does not
+        # include this.  Strip this prefix to permit clean matches. 
+        map { s{^\./}{} } @ARGV;
+    }
+}
+
 my @COUNT_DIFF_ARGV        = undef;
 my $COUNT_DIFF_report_file = undef;
 if ($opt_count_diff and !$opt_diff_list_file) {
@@ -1086,9 +1142,9 @@ $opt_by_percent = lc $opt_by_percent;
 
 if (defined $opt_vcs) {
     if ($opt_vcs eq "auto") {
-        if      (-d ".git") {
+        if      (is_dir(".git")) {
             $opt_vcs = "git";
-        } elsif (-d ".svn") {
+        } elsif (is_dir(".svn")) {
             $opt_vcs = "svn";
         } else {
             warn "--vcs auto:  unable to determine versioning system\n";
@@ -1150,6 +1206,10 @@ if (!$opt_diff_list_file) {
 trick_pp_packer_encode() if $ON_WINDOWS and $opt_file_encoding;
 $File::Find::dont_use_nlink = 1 if $opt_stat or top_level_SMB_dir(\@ARGV);
 my @git_similarity = (); # only populated with --git-diff-simindex
+my %git_metadata   = ();
+get_git_metadata(\@ARGV, \%git_metadata) if $opt_force_git;
+#use Data::Dumper;
+#print Dumper(\%git_metadata);
 replace_git_hash_with_tarfile(\@ARGV, \@git_similarity);
 # 1}}}
 # Step 1:  Initialize global constants.        {{{1
@@ -1335,6 +1395,8 @@ if ($opt_count_diff) {
     if ($opt_count_diff == 3) {
         $opt_diff = 1;
         @ARGV = @{$COUNT_DIFF_ARGV[ $opt_count_diff ]}; # last arg is list of list
+    } elsif ($opt_diff_list_files) {
+        $opt_diff = 0;
     }
     if ($opt_report_file) {
         # Instead of just one output file, will have three.
@@ -1344,18 +1406,20 @@ if ($opt_count_diff) {
         my ($fn_0, $fn_1) = (undef, undef);
         if ($ON_WINDOWS) {
             ($fn_0 = $ARGV[0]) =~ s{\\}{_}g;
-             $fn_0 =~ s{::}{_}g;
+             $fn_0 =~ s{:}{_}g;
+             $fn_0 =~ s{/}{_}g;
             ($fn_1 = $ARGV[1]) =~ s{\\}{_}g if defined $ARGV[1];
-             $fn_1 =~ s{::}{_}g             if defined $ARGV[1];
+             $fn_1 =~ s{:}{_}g              if defined $ARGV[1];
+             $fn_1 =~ s{/}{_}g              if defined $ARGV[1];
         } else {
             ($fn_0 = $ARGV[0]) =~ s{/}{_}g;
             ($fn_1 = $ARGV[1]) =~ s{/}{_}g  if defined $ARGV[1];
         }
 
-        if ($opt_count_diff == 3) {
+        if      ($opt_count_diff == 3) {
             $opt_report_file = $COUNT_DIFF_report_file . ".diff.$fn_0.$fn_1";
         } else {
-            $opt_report_file = $COUNT_DIFF_report_file . "." .  $fn_0;
+            $opt_report_file = $COUNT_DIFF_report_file . ".$fn_0";
         }
     } else {
         # STDOUT; print a header showing what it's working on
@@ -1685,11 +1749,16 @@ if ($opt_diff_list_file) {
 }
 for (my $i = 0; $i < scalar @ARGV; $i++) {
     if ($opt_diff_list_file) {
-        push @fh, make_file_list($files_for_set[$i],
+        push @fh, make_file_list($files_for_set[$i], $i+1,
+                                \%Error_Codes, \@Errors, \%Ignored);
+        @{$files_for_set[$i]} = @file_list;
+    } elsif ($opt_diff_list_files) {
+        my @list_files = read_list_file($ARGV[$i]);
+        push @fh, make_file_list(\@list_files, $i+1,
                                 \%Error_Codes, \@Errors, \%Ignored);
         @{$files_for_set[$i]} = @file_list;
     } else {
-        push @fh, make_file_list([ $ARGV[$i] ],
+        push @fh, make_file_list([ $ARGV[$i] ], $i+1,
                                 \%Error_Codes, \@Errors, \%Ignored);
         @{$files_for_set[$i]} = @file_list;
     }
@@ -1723,6 +1792,10 @@ foreach my $FH (@fh) {  # loop over each pair of file sets
         exclude_by_regex($opt_exclude_content,              # in
                         \%{$unique_source_file{$FH}},       # in/out
                         \%Ignored);                         # out
+    } elsif ($opt_include_content) {
+        include_by_regex($opt_include_content,              # in
+                        \%{$unique_source_file{$FH}},       # in/out
+                        \%Ignored);                         # out
     }
 
     if ($opt_include_lang) {
@@ -1732,7 +1805,7 @@ foreach my $FH (@fh) {  # loop over each pair of file sets
         foreach my $file (keys %{$unique_source_file{$FH}}) {
             my $keep_file = 0;
             foreach my $keep_lang (keys %Include_Language) {
-                if ($Language{$FH}{$file} eq $keep_lang) {
+                if (lc($Language{$FH}{$file}) eq $keep_lang) {
                     $keep_file = 1;
                     last;
                 }
@@ -1921,16 +1994,18 @@ if ($opt_by_file) {
 } else {
 # Step 4:  Separate code from non-code files.  {{{1
 my $fh = 0;
-if ($opt_list_file or $opt_vcs) {
+if ($opt_list_file or $opt_diff_list_files or $opt_vcs) {
     my @list;
     if ($opt_vcs) {
         @list = invoke_generator($opt_vcs, \@ARGV);
-    } else {
+    } elsif ($opt_list_file) {
         @list = read_list_file($opt_list_file);
+    } else {
+        @list = read_list_file($ARGV[0]);
     }
-    $fh = make_file_list(\@list, \%Error_Codes, \@Errors, \%Ignored);
+    $fh = make_file_list(\@list, 0, \%Error_Codes, \@Errors, \%Ignored);
 } else {
-    $fh = make_file_list(\@ARGV, \%Error_Codes, \@Errors, \%Ignored);
+    $fh = make_file_list(\@ARGV, 0, \%Error_Codes, \@Errors, \%Ignored);
     #     make_file_list populates global variable @file_list via call to
     #     File::Find's find() which in turn calls files()
 }
@@ -1980,6 +2055,10 @@ remove_duplicate_files($fh                          ,   # in
                            \%Ignored                );  # out
 if ($opt_exclude_content) {
     exclude_by_regex($opt_exclude_content,              # in
+                    \%unique_source_file ,              # in/out
+                    \%Ignored);                         # out
+} elsif ($opt_include_content) {
+    include_by_regex($opt_include_content,              # in
                     \%unique_source_file ,              # in/out
                     \%Ignored);                         # out
 }
@@ -2064,7 +2143,10 @@ my $end_time = get_time();
 printf "%8d file%s ignored.\n", plural_form(scalar keys %Ignored)
     unless $opt_quiet;
 print_errors(\%Error_Codes, \@Errors) if @Errors;
-exit unless %Results_by_Language;
+if (!%Results_by_Language) {
+    write_null_results($opt_json, $opt_xml, $opt_report_file);
+    exit;
+}
 
 generate_sql($end_time - $start_time,
             \%Results_by_File, \%Scale_Factor) if $opt_sql;
@@ -2089,7 +2171,10 @@ if      ($opt_by_file_by_lang) {
 # 1}}}
 }
 if ($opt_report_file) { write_file($opt_report_file, {}, @Lines_Out); }
-else                  { print "\n", join("\n", @Lines_Out), "\n"; }
+else {
+    print "\n" unless $opt_quiet;
+    print join("\n", @Lines_Out), "\n";
+}
 if ($opt_count_diff) {
     ++$opt_count_diff;
     exit if $opt_count_diff > 3;
@@ -2192,6 +2277,29 @@ sub exclude_by_regex {                       # {{{1
         delete $rh_unique_source_file->{$file};
     }
 } # 1}}}
+sub include_by_regex {                       # {{{1
+    my ($regex,
+        $rh_unique_source_file, # in/out
+        $rh_ignored           , # out
+       ) = @_;
+    my @exclude = ();
+    foreach my $file (keys %{$rh_unique_source_file}) {
+        my $keep_this_one = 0;
+        foreach my $line (read_file($file)) {
+            if ($line =~ /$regex/) {
+                $keep_this_one = 1;
+                last;
+            }
+        }
+        if (!$keep_this_one) {
+            $rh_ignored->{$file} = "does not satisfy --include-content=$regex";
+            push @exclude, $file;
+        }
+    }
+    foreach my $file (@exclude) {
+        delete $rh_unique_source_file->{$file};
+    }
+} # 1}}}
 sub get_max_processes {                      # {{{1
     # If user has specified valid number of processes, use that.
     if (defined $opt_processes) {
@@ -2249,7 +2357,7 @@ sub get_max_processes {                      # {{{1
     return 0;
 } # 1}}}
 sub exclude_autogenerated_files {            # {{{1
-    my ($ra_file_list, # in
+    my ($ra_file_list, # in/out
         $rh_Err      , # in   hash of error codes
         $raa_errors  , # out
         $rh_Ignored  , # out
@@ -2271,7 +2379,39 @@ sub exclude_autogenerated_files {            # {{{1
         }
     }
     @{$ra_file_list} = @file_list_minus_autogen;
+
+    if ($opt_force_git) {
+        my $repo_dir = git_root_dir();
+        my @file_list_minus_linguist = ();
+        # if there's a .gitattributes file, look for linguist-generated
+        # and linguist-vendored entries to ignore
+        my $GA = ".gitattributes";
+        if (-f $GA) {
+            foreach my $line (read_file($GA)) {
+                next unless $line =~ /^(.*?)\s+(linguist-(vendored|generated))/;
+                my $pattern = $1;
+                $pattern =~ s/^"(.*?)"$/$1/;
+                foreach my $file (@{$ra_file_list}) {
+                    my $full_path = File::Spec->catfile($repo_dir, $file);
+                    my $clean_pattern = File::Spec->catfile($repo_dir, $pattern);
+                    if (match_glob($clean_pattern, $full_path)) {
+                        $rh_Ignored->{$file} = "matches $GA rule '$line'";
+                    } else {
+                        push @file_list_minus_linguist, $file;
+                    }
+                }
+            }
+        }
+    }
     print "<- exclude_autogenerated_files()\n" if $opt_v > 2;
+} # 1}}}
+sub git_root_dir {                           # {{{1
+    # if in a git repo, return the repo's top level directory
+    my $cmd = "git rev-parse --show-toplevel";
+    print $cmd, "\n" if $opt_v > 1;
+    my $dir = undef;
+    chomp($dir = `$cmd`);
+    die "Not in a git repository" unless $dir
 } # 1}}}
 sub file_extension {                         # {{{1
     my ($fname, ) = @_;
@@ -2305,12 +2445,19 @@ sub count_files {                            # {{{1
             $p_ignored{$file} = "not in --include-ext=$opt_include_ext";
             next;
         }
-        if ($opt_include_lang and not $Include_Language{$Language{$file}}) {
+        if ($opt_include_lang and not $Include_Language{lc($Language{$file})}) {
             $p_ignored{$file} = "not in --include-lang=$opt_include_lang";
             next;
         }
         if ($Exclude_Language{$Language{$file}}) {
             $p_ignored{$file} = "--exclude-lang=$Language{$file}";
+            next;
+        }
+        if ($opt_force_lang_def and ($Language{$file} eq "XML") and
+            !defined $Filters_by_Language{XML}) {
+            # XML check is attempted for all unidentified text files.
+            # This can't be done if user forces language definition
+            # that excludes XML.  GH #596
             next;
         }
 
@@ -2324,30 +2471,32 @@ sub count_files {                            # {{{1
             next;
         }
 
-        my ($all_line_count, $blank_count, $comment_count, $code_count);
-        if ($opt_use_sloccount and $Language{$file} =~ /^(C|C\+\+|XML|PHP|Pascal|Java)$/) {
-            chomp ($blank_count     = `grep -cv \"[^[:space:]]\" '$file'`);
-            chomp ($all_line_count  = `cat '$file' | wc -l`);
-            if      ($Language{$file} =~ /^(C|C\+\+)$/) {
-                $code_count = `cat '$file' | c_count      | head -n 1`;
-            } elsif ($Language{$file} eq "XML") {
-                $code_count = `cat '$file' | xml_count    | head -n 1`;
-            } elsif ($Language{$file} eq "PHP") {
-                $code_count = `cat '$file' | php_count    | head -n 1`;
-            } elsif ($Language{$file} eq "Pascal") {
-                $code_count = `cat '$file' | pascal_count | head -n 1`;
-            } elsif ($Language{$file} eq "Java") {
-                $code_count = `cat '$file' | java_count   | head -n 1`;
+        my ($all_line_count, $blank_count, $comment_count, $code_count) = (0, 0, 0, 0);
+        if (!$opt_only_count_files) {
+            if ($opt_use_sloccount and $Language{$file} =~ /^(C|C\+\+|XML|PHP|Pascal|Java)$/) {
+                chomp ($blank_count     = `grep -cv \"[^[:space:]]\" '$file'`);
+                chomp ($all_line_count  = `cat '$file' | wc -l`);
+                if      ($Language{$file} =~ /^(C|C\+\+)$/) {
+                    $code_count = `cat '$file' | c_count      | head -n 1`;
+                } elsif ($Language{$file} eq "XML") {
+                    $code_count = `cat '$file' | xml_count    | head -n 1`;
+                } elsif ($Language{$file} eq "PHP") {
+                    $code_count = `cat '$file' | php_count    | head -n 1`;
+                } elsif ($Language{$file} eq "Pascal") {
+                    $code_count = `cat '$file' | pascal_count | head -n 1`;
+                } elsif ($Language{$file} eq "Java") {
+                    $code_count = `cat '$file' | java_count   | head -n 1`;
+                } else {
+                    die "SLOCCount match failure: file=[$file] lang=[$Language{$file}]";
+                }
+                $code_count = substr($code_count, 0, -2);
+                $comment_count = $all_line_count - $code_count - $blank_count;
             } else {
-                die "SLOCCount match failure: file=[$file] lang=[$Language{$file}]";
+                ($all_line_count,
+                $blank_count   ,
+                $comment_count ,) = call_counter($file, $Language{$file}, \@Errors);
+                $code_count = $all_line_count - $blank_count - $comment_count;
             }
-            $code_count = substr($code_count, 0, -2);
-            $comment_count = $all_line_count - $code_count - $blank_count;
-        } else {
-            ($all_line_count,
-             $blank_count   ,
-             $comment_count ,) = call_counter($file, $Language{$file}, \@Errors);
-            $code_count = $all_line_count - $blank_count - $comment_count;
         }
 
         if ($opt_by_file) {
@@ -2441,8 +2590,12 @@ sub count_filesets {                         # {{{1
         # is in a known language.
         next if $opt_include_ext
             and not $Include_Ext{ file_extension($f) };
+        if (!defined $Language{$fset_b}{$f}) {
+            $p_ignored{$f} = "excluded or unknown language";
+            next;
+        }
         next if $opt_include_lang
-            and not $Include_Language{$Language{$fset_b}{$f}};
+            and not $Include_Language{lc($Language{$fset_b}{$f})};
         my $this_lang = $Language{$fset_b}{$f};
         if (!defined  $Language{$fset_b}{$f}) {
             # shouldn't happen but could get here if using
@@ -2487,9 +2640,9 @@ sub count_filesets {                         # {{{1
             and not $Include_Ext{ file_extension($f) };
         next if $opt_include_lang
             and (not defined $Language{$fset_a}{$f}
-             or  not defined $Include_Language{$Language{$fset_a}{$f}});
+             or  not defined $Include_Language{lc($Language{$fset_a}{$f})});
         my $this_lang = $Language{$fset_a}{$f};
-        if ($this_lang eq "(unknown)") {
+        if ((not defined $this_lang) or ($this_lang eq "(unknown)")) {
             $p_ignored{$f} = "unknown language";
             next;
         }
@@ -2542,13 +2695,13 @@ sub count_filesets {                         # {{{1
         # filter out non-included extensions
         if ($opt_include_ext  and not $Include_Ext{ file_extension($file_L) }
                               and not $Include_Ext{ file_extension($file_R) }) {
-            $p_ignored{$file_L} = "not in --include-lang=$opt_include_ext";
-            $p_ignored{$file_R} = "not in --include-lang=$opt_include_ext";
+            $p_ignored{$file_L} = "not in --include-ext=$opt_include_ext";
+            $p_ignored{$file_R} = "not in --include-ext=$opt_include_ext";
             next;
         }
         # filter out non-included languages
-        if ($opt_include_lang and not $Include_Language{$Lang_L}
-                              and not $Include_Language{$Lang_R}) {
+        if ($opt_include_lang and not $Include_Language{lc($Lang_L)}
+                              and not $Include_Language{lc($Lang_R)}) {
             $p_ignored{$file_L} = "not in --include-lang=$opt_include_lang";
             $p_ignored{$file_R} = "not in --include-lang=$opt_include_lang";
             next;
@@ -2930,7 +3083,7 @@ sub combine_results {                        # {{{1
 
     foreach my $file (@{$ra_report_files}) {
         my $n_results_found = 0;
-        my $IN = new IO::File $file, "r";
+        my $IN = open_file('<', $file, 1);
         if (!defined $IN) {
             warn "Unable to read $file; ignoring.\n";
             next;
@@ -3305,7 +3458,15 @@ sub xml_yaml_or_json_header {                # {{{1
     if ($opt_xml) {
         $header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
         $header .= "\n<?xml-stylesheet type=\"text/xsl\" href=\"" . $opt_xsl . "\"?>" if $opt_xsl;
-        $header .= "<${type}results>
+        if ($opt_hide_rate) {
+            $header .= "<${type}results>
+<header>
+  <cloc_url>$URL</cloc_url>
+  <cloc_version>$version</cloc_version>
+  <n_files>$sum_files</n_files>
+  <n_lines>$sum_lines</n_lines>";
+        } else {
+            $header .= "<${type}results>
 <header>
   <cloc_url>$URL</cloc_url>
   <cloc_version>$version</cloc_version>
@@ -3314,12 +3475,30 @@ sub xml_yaml_or_json_header {                # {{{1
   <n_lines>$sum_lines</n_lines>
   <files_per_second>$file_rate</files_per_second>
   <lines_per_second>$line_rate</lines_per_second>";
+        }
         $header .= "\n$report_file"
             if $opt_report_file;
         $header .= "\n</header>";
+        if (%git_metadata) {
+            foreach my $target (keys %git_metadata) {
+                $header .= "\n<source>";
+                $header .= "\n  <target>$target</target>";
+                $header .= "\n  <origin>$git_metadata{$target}{'origin'}</origin>";
+                $header .= "\n  <branch>$git_metadata{$target}{'branch'}</branch>";
+                $header .= "\n  <commit>$git_metadata{$target}{'commit'}</commit>";
+                $header .= "\n</source>";
+            }
+        }
     } elsif ($opt_yaml or $opt_json) {
         my ($Q, $open_B, $close_B, $start, $C) = yaml_to_json_separators();
-        $header = "${start}${Q}header${Q} : $open_B
+        if ($opt_hide_rate) {
+            $header = "${start}${Q}header${Q} : $open_B
+  ${Q}cloc_url${Q}           : ${Q}$URL${Q}${C}
+  ${Q}cloc_version${Q}       : ${Q}$version${Q}${C}
+  ${Q}n_files${Q}            : $sum_files${C}
+  ${Q}n_lines${Q}            : $sum_lines${C}";
+        } else {
+            $header = "${start}${Q}header${Q} : $open_B
   ${Q}cloc_url${Q}           : ${Q}$URL${Q}${C}
   ${Q}cloc_version${Q}       : ${Q}$version${Q}${C}
   ${Q}elapsed_seconds${Q}    : $elapsed_sec${C}
@@ -3327,6 +3506,7 @@ sub xml_yaml_or_json_header {                # {{{1
   ${Q}n_lines${Q}            : $sum_lines${C}
   ${Q}files_per_second${Q}   : $file_rate${C}
   ${Q}lines_per_second${Q}   : $line_rate";
+        }
         if ($opt_report_file) {
             my $Fname = $opt_report_file;
             $Fname =~ s{\\}{\\\\}g if $ON_WINDOWS;
@@ -3791,9 +3971,17 @@ create table t        (
     my $open_mode = ">";
        $open_mode = ">>" if $opt_sql_append;
 
-    my $fh = new IO::File; # $opt_sql, "w";
-    if (!$fh->open("${open_mode}${opt_sql}")) {
-        die "Unable to write to $opt_sql  $!\n";
+    my $fh;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path and $opt_sql ne "-") {
+        # only use the Win32::LongPath wrapper here when needed,
+        # and only when not writing to STDOUT.
+        $fh = open_file($open_mode, $opt_sql, 1);
+        die "Unable to write to $opt_sql\n" if !defined $fh;
+    } else {
+        $fh = new IO::File; # $opt_sql, "w";
+        if (!$fh->open("${open_mode}${opt_sql}")) {
+            die "Unable to write to $opt_sql  $!\n";
+        }
     }
     print $fh $schema unless defined $opt_sql_append;
 
@@ -4028,6 +4216,7 @@ sub generate_report {                        # {{{1
             }
         }
     } else {
+        $header_line =~ s/,// if $opt_csv;
         push @results, output_header($header_line, $hyphen_line, $BY_FILE);
     }
 
@@ -4502,6 +4691,8 @@ sub read_lang_def {                          # {{{1
     foreach (@lines) {
         next if /^\s*#/ or /^\s*$/;
 
+        $_ = lc $_ if $ON_WINDOWS and /^\s+(filename|extension)\s/;
+
         if (/^(\w+.*?)\s*$/) {
             $language = $1;
             next;
@@ -4589,6 +4780,8 @@ sub merge_lang_def {                         # {{{1
     my @lines = read_file($file);
     foreach (@lines) {
         next if /^\s*#/ or /^\s*$/;
+
+        $_ = lc $_ if $ON_WINDOWS and /^\s+(filename|extension)\s/;
 
         if (/^(\w+.*?)\s*$/) {
             $language = $1;
@@ -4841,15 +5034,42 @@ sub top_level_SMB_dir {                      # {{{1
 
     my ($ra_arg_list,) = @_;  # in user supplied file name, directory name, git hash, etc
     foreach my $entry (@{$ra_arg_list}) {
-        next unless -d $entry;
+        next unless is_dir($entry);
         # gets here if $entry is a directory; now get its nlink value
-        my @stats = stat($entry);
-        my $nlink = $stats[3];
+        my $nlink;
+        if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+            my $stats = statL($entry);
+            $nlink = $stats->{nlink} if defined $stats;
+        } else {
+            my @stats = stat($entry);
+            $nlink = $stats[3];
+        }
         return 1 if $nlink == 2;  # meaning it is an SMB mount
     }
     return 0;
 }
 # 1}}}
+sub get_git_metadata {                       # {{{1
+    my ($ra_arg_list,             # in  file name, directory name and/or
+                                  #     git commit hash to examine
+        $rh_git_metadata) = @_;   # out repo info
+    # Capture git information where possible--origin, branch, commit hash.
+    my $prt_args = join(",", @{$ra_arg_list});
+    print "-> get_git_metadata($prt_args)\n" if $opt_v > 2;
+    foreach my $arg (@{$ra_arg_list}) {
+        next if is_file($arg);
+        my $origin = `git remote get-url origin 2>&1`;
+        next if $origin =~ /^fatal:/;
+        chomp($rh_git_metadata->{$arg}{"origin"} = $origin);
+        chomp($rh_git_metadata->{$arg}{"branch"} = `git symbolic-ref --short HEAD`);
+        if (is_dir($arg)) {
+            chomp($rh_git_metadata->{$arg}{"commit"}   = `git rev-parse HEAD`);
+        } else {
+            chomp($rh_git_metadata->{$arg}{"commit"}   = `git rev-parse $arg`);
+        }
+    }
+    print "<- get_git_metadata()\n" if $opt_v > 2;
+} # 1}}}
 sub replace_git_hash_with_tarfile {          # {{{1
     my ($ra_arg_list,             # in  file name, directory name and/or
                                   #     git commit hash to examine
@@ -4890,7 +5110,7 @@ sub replace_git_hash_with_tarfile {          # {{{1
     my $i = 0;
     foreach my $file_or_dir (@{$ra_arg_list}) {
         ++$i;
-        if (-r $file_or_dir) { # readable file or dir; not a git hash
+        if (can_read($file_or_dir)) { # readable file or dir; not a git hash
             $replacement_arg_list{$i} = $file_or_dir;
             next;
         } elsif ($opt_force_git or $file_or_dir =~ m/$hash_regex/) {
@@ -5079,7 +5299,7 @@ sub empty_tar {                              # {{{1
     my $cmd = $ON_WINDOWS ? "type nul > $Tarfile" : "tar -cf $Tarfile -T /dev/null";
     print  $cmd, "\n" if $opt_v;
     system $cmd;
-    if (!-r $Tarfile) {
+    if (!can_read($Tarfile)) {
         # not readable
         die "Failed to create empty tarfile.";
     }
@@ -5156,7 +5376,7 @@ sub git_archive {                            # {{{1
     my $cmd = "git archive -o $Tarfile $files_this_commit";
     print  $cmd, "\n" if $opt_v;
     system $cmd;
-    if (!-r $Tarfile or !-s $Tarfile) {
+    if (!can_read($Tarfile) or !get_size($Tarfile)) {
         # not readable, or zero sized
         die "Failed to create tarfile of files from git.";
     }
@@ -5177,7 +5397,7 @@ sub git_archive {                            # {{{1
             my $extract_dir = tempdir( CLEANUP => 0 );  # 1 = delete on exit
             chdir "$extract_dir";
             foreach my $T (@tar_files) {
-                next unless -f $T and -s $T;
+                next unless is_file($T) and get_size($T);
                 my $cmd = "tar -x -f \"$T\"";
                 print  $cmd, "\n" if $opt_v;
                 system $cmd;
@@ -5226,6 +5446,7 @@ sub lower_on_Windows {                       # {{{1
 # }}}
 sub make_file_list {                         # {{{1
     my ($ra_arg_list,  # in   file and/or directory names to examine
+        $iteration  ,  # in   0 if only called once, 1 or 2 if twice for diff
         $rh_Err     ,  # in   hash of error codes
         $raa_errors ,  # out  errors encountered
         $rh_ignored ,  # out  files not recognized as computer languages
@@ -5235,13 +5456,22 @@ sub make_file_list {                         # {{{1
     my $separator = defined $opt_csv_delimiter ? $opt_csv_delimiter : ",";
     my ($fh, $filename);
     if ($opt_categorized) {
-        $filename = $opt_categorized;
-        $fh = new IO::File $filename, "+>";  # open for read/write
+        if ($iteration) {
+            # am being called twice for diff of Left and Right
+            my $ext = $iteration == 1 ? "L" : "R";
+            $filename = $opt_categorized . "-$ext";
+        } else {
+            $filename = $opt_categorized;
+        }
+        $fh = open_file('+>', $filename, 1);  # open for read/write
         die "Unable to write to $filename:  $!\n" unless defined $fh;
     } elsif ($opt_sdir) {
         # write to the user-defined scratch directory
-        $filename = $opt_sdir . '/cloc_file_list.txt';
-        $fh = new IO::File $filename, "+>";  # open for read/write
+        ++$TEMP_OFF;
+        my $scr_dir = "$opt_sdir/$TEMP_OFF";
+        File::Path::mkpath($scr_dir) unless is_dir($scr_dir);
+        $filename = $scr_dir . '/cloc_file_list.txt';
+        $fh = open_file('+>', $filename, 1);  # open for read/write
         die "Unable to write to $filename:  $!\n" unless defined $fh;
     } else {
         # let File::Temp create a suitable temporary file
@@ -5253,16 +5483,16 @@ sub make_file_list {                         # {{{1
     foreach my $file_or_dir (@{$ra_arg_list}) {
         my $size_in_bytes = 0;
         my $F = lower_on_Windows($file_or_dir);
-        my $ul_F = $upper_lower_map{$F} ? $ON_WINDOWS : $F;
-        if (!-r $file_or_dir) {
+        my $ul_F = $ON_WINDOWS ? $upper_lower_map{$F} : $F;
+        if (!can_read($file_or_dir)) {
             push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $F];
             next;
         }
         if (is_file($file_or_dir)) {
-            if (!(-s $file_or_dir)) {   # 0 sized file, named pipe, socket
+            if (!get_size($file_or_dir)) {   # 0 sized file, named pipe, socket
                 $rh_ignored->{$F} = 'zero sized file';
                 next;
-            } elsif (-B $file_or_dir and !$opt_read_binary_files) {
+            } elsif (is_binary($file_or_dir) and !$opt_read_binary_files) {
                 # avoid binary files unless user insists on reading them
                 if ($opt_unicode) {
                     # only ignore if not a Unicode file w/trivial
@@ -5309,9 +5539,22 @@ sub make_file_list {                         # {{{1
             $Ignored{$D} = "--exclude-dir=$Exclude_Dir{$dir}";
             next;
         }
-        find({wanted     => \&files            ,
-              preprocess => \&find_preprocessor,
-              follow     =>  $opt_follow_links }, $dir);
+        if ($opt_no_recurse) {
+            if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+                my $d = Win32::LongPath->new();
+                $d->opendirL($dir);
+                push @file_list, grep(is_file($_), $d->readdirL());
+                $d->closedirL();
+            } else {
+                opendir(DIR, $dir);
+                push @file_list, grep(is_file($_), readdir(DIR));
+                closedir(DIR);
+            }
+        } else {
+            find({wanted     => \&files            ,
+                  preprocess => \&find_preprocessor,
+                  follow     =>  $opt_follow_links }, $dir);
+        }
     }
     if ($opt_follow_links) {
         # giving { 'follow' => 1 } to find() makes it skip the
@@ -5349,7 +5592,13 @@ sub make_file_list {                         # {{{1
             next;
         }
 
-        my $size_in_bytes = (stat $file)[7];
+        my $size_in_bytes;
+        if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+            my $stats = statL($file);
+            $size_in_bytes = $stats->{size} if defined $stats;
+        } else {
+            $size_in_bytes = (stat $file)[7];
+        }
         my $language      = "";
         if ($All_One_Language) {
             # user over-rode auto-language detection by using
@@ -5366,6 +5615,9 @@ sub make_file_list {                         # {{{1
             next;
         } elsif (!defined $language) {
             $rh_ignored->{$F} = "unable to associate with a language";
+            next;
+        } elsif ($language eq "(unknown)") {
+            # entry should already be in %{$rh_ignored}
             next;
         }
         printf $fh "%d%s%s%s%s\n", $size_in_bytes, $separator,
@@ -5400,6 +5652,7 @@ sub invoke_generator {                       # {{{1
             # is this file desired?
             my $want_this_one = 0;
             foreach my $file_dir (@{$ra_user_inputs}) {
+                $file_dir =~ s{\\}{/}g if $ON_WINDOWS;
                 if (/^$file_dir/) {
                     $want_this_one = 1;
                     last;
@@ -5433,6 +5686,26 @@ sub invoke_generator {                       # {{{1
             push @post_filter, $F unless basename($F) =~ m{$opt_not_match_f};
             next;
         }
+        my $nBytes = get_size($F);
+        if (!$nBytes) {
+            $Ignored{$F} = 'zero sized file';
+            printf "files(%s)  zero size\n", $F if $opt_v > 5;
+        }
+        next unless $nBytes;
+        if ($nBytes > $opt_max_file_size*1024**2) {
+            $Ignored{$F} = "file size of " .
+                $nBytes/1024**2 . " MB exceeds max file size of " .
+                "$opt_max_file_size MB";
+            printf "file(%s)  exceeds $opt_max_file_size MB\n",
+                $F if $opt_v > 5;
+            next;
+        }
+        my $is_bin = is_binary($F);
+        printf "files(%s)  size=%d  -B=%d\n",
+            $F, $nBytes, $is_bin if $opt_v > 5;
+        $is_bin = 0 if $opt_unicode and unicode_file($_);
+        $is_bin = 0 if $opt_read_binary_files;
+        next if $is_bin;
         push @post_filter, $F;
     }
     print "<- invoke_generator\n" if $opt_v > 2;
@@ -5451,12 +5724,13 @@ sub remove_duplicate_files {                 # {{{1
     # Where files are equally sized, compare their MD5 checksums.
     print "-> remove_duplicate_files\n" if $opt_v > 2;
 
+    my $separator = defined $opt_csv_delimiter ? $opt_csv_delimiter : ",";
     my $n = 0;
     my %files_by_size = (); # files_by_size{ # bytes } = [ list of files ]
     seek($fh, 0, 0); # rewind to beginning of the temp file
     while (<$fh>) {
         ++$n;
-        my ($size_in_bytes, $language, $file) = split(/,/, $_, 3);
+        my ($size_in_bytes, $language, $file) = split(/\Q$separator\E/, $_, 3);
         if (!defined($size_in_bytes) or
             !defined($language)      or
             !defined($file)) {
@@ -5587,7 +5861,7 @@ sub find_preprocessor {                      # {{{1
                     } else {
                         push @ok, $F_or_D;
                     }
-                } elsif (!-d $F_or_D and basename($File::Find::name) =~ m{$opt_not_match_d}) {
+                } elsif (!is_dir($F_or_D) and basename($File::Find::name) =~ m{$opt_not_match_d}) {
                     $Ignored{$File::Find::name} = "--not-match-d (basename) =$opt_not_match_d";
                 } else {
                     push @ok, $F_or_D;
@@ -5621,8 +5895,8 @@ sub files {                                  # {{{1
     }
     if ($opt_match_d    ) { return unless $Dir =~ m{$opt_match_d}     }
 
-    my $nBytes = -s $_ ;
-    if (!$nBytes) {
+    my $nBytes = get_size($_);
+    if (!$nBytes and is_file($File::Find::name)) {
         $Ignored{$File::Find::name} = 'zero sized file';
         printf "files(%s)  zero size\n", $File::Find::name if $opt_v > 5;
     }
@@ -5636,11 +5910,15 @@ sub files {                                  # {{{1
         return;
     }
     my $is_dir = is_dir($_);
-    my $is_bin = -B     $_ ;
+    my $is_bin = is_binary($_);
     printf "files(%s)  size=%d is_dir=%d  -B=%d\n",
         $File::Find::name, $nBytes, $is_dir, $is_bin if $opt_v > 5;
     $is_bin = 0 if $opt_unicode and unicode_file($_);
     $is_bin = 0 if $opt_read_binary_files;
+    if ($is_bin and !$is_dir) {
+        $Ignored{$File::Find::name} = "binary file";
+        printf "files(%s)  binary file\n", $File::Find::name if $opt_v > 5;
+    }
     return if $is_dir or $is_bin;
     ++$nFiles_Found;
     printf "%8d files\r", $nFiles_Found
@@ -5654,10 +5932,79 @@ sub archive_files {                          # {{{1
             if $File::Find::name =~ m{$ext$};
     }
 } # 1}}}
+sub open_file {                              # {{{1
+    # portable method to open a file. On Windows this uses Win32::LongPath to
+    # allow reading/writing files past the 255 char path length limit. When on
+    # other operating systems, $use_new_file can be used to specify opening a
+    # file with `new IO::File` instead of `open`. Note: `openL` doesn't support
+    # the C-like fopen modes ("w", "r+", etc.), it only supports Perl mode
+    # strings (">", "+<", etc.). So be sure to only use Perl mode strings to
+    # ensure compatibility. Additionally, openL doesn't handle pipe modes; if
+    # you need to open a pipe/STDIN/STDOUT, use the native `open` function.
+    my ($mode,         # Perl file mode; can not be C-style file mode
+        $filename,     # filename to open
+        $use_new_file, # whether to use `new IO::File` or `open` when not using Win32::LongPath
+        ) = @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        my $file = undef;
+        openL(\$file, $mode, $filename);
+        return $file;
+    } elsif ($use_new_file) {
+        return new IO::File $filename, $mode;
+    }
+    my $file = undef;
+    open($file, $mode, $filename);
+    return $file;
+} # 1}}}
+sub unlink_file {                            # {{{1
+    # portable method to unlink a file. On Windows this uses Win32::LongPath to
+    # allow unlinking files past the 255 char path length limit. Otherwise, the
+    # native `unlink` will be used.
+    my $filename = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        return unlinkL($filename);
+    }
+    return unlink $filename;
+} # 1}}}
+sub is_binary {                              # {{{1
+    # portable method to test if item is a binary file. For Windows,
+    # Win32::LongPath doesn't provide a testL option for -B, but -B
+    # accepts a filehandle which does work with files opened with openL.
+    my $item = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        my $IN = open_file('<', $item, 0);
+        if (defined $IN) {
+            my $res = -B $IN;
+            close($IN);
+            return $res;
+        }
+        return;
+    }
+    return (-B $item);
+} # 1}}}
+sub can_read {                               # {{{1
+    # portable method to test if item can be read
+    my $item = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        return testL('r', $item);
+    }
+    return (-r $item);
+} # 1}}}
+sub get_size {                               # {{{1
+    # portable method to get size in bytes of a file
+    my $filename = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        return testL('s', $filename);
+    }
+    return (-s $filename);
+} # 1}}}
 sub is_file {                                # {{{1
     # portable method to test if item is a file
     # (-f doesn't work in ActiveState Perl on Windows)
     my $item = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        return testL('f', $item);
+    }
     return (-f $item);
 
 #     Was:
@@ -5672,6 +6019,9 @@ sub is_file {                                # {{{1
 } # 1}}}
 sub is_dir {                                 # {{{1
     my $item = shift @_;
+    if ($ON_WINDOWS and $HAVE_Win32_Long_Path) {
+        return testL('d', $item);
+    }
     return (-d $item); # should work everywhere now (July 2017)
 
 #     Was:
@@ -5947,18 +6297,22 @@ sub first_line {                             # {{{1
        ) = @_;
     my $line = "";
     print "-> first_line($file, $n_lines)\n" if $opt_v > 2;
-    if (!-r $file) {
+    if (!can_read($file)) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $line;
     }
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         print "<- first_line($file, $n_lines)\n" if $opt_v > 2;
         return $line;
     }
+    # issue 644: Unicode files can have non-zero $n_lines
+    # but empty <$IN> contents
     for (my $i = 0; $i < $n_lines; $i++) {
-        chomp($line .= <$IN>);
+        my $L = <$IN>;
+        last unless defined $L;
+        chomp($line .= $L);
     }
     $IN->close;
     print "<- first_line($file, $n_lines, '$line')\n" if $opt_v > 2;
@@ -6007,7 +6361,7 @@ sub different_files {                        # {{{1
     my %file_hash = ();  # file_hash{md5 hash} = [ file1, file2, ... ]
     foreach my $F (@{$ra_files}) {
         next if is_dir($F);  # needed for Windows
-        my $IN = new IO::File $F, "r";
+        my $IN = open_file('<', $F, 1);
         if (!defined $IN) {
             push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $F];
             $rh_ignored->{$F} = 'cannot read';
@@ -6074,11 +6428,11 @@ sub call_counter {                           # {{{1
 
     my @lines = ();
     my $ascii = "";
-    if (-B $file and $opt_unicode) {
+    if (is_binary($file) and $opt_unicode) {
         # was binary so must be unicode
 
         $/ = undef;
-        my $IN = new IO::File $file, "r";
+        my $IN = open_file('<', $file, 1);
         my $bin_text = <$IN>;
         $IN->close;
         $/ = "\n";
@@ -6111,9 +6465,9 @@ sub call_counter {                           # {{{1
 
     print_lines($file, "Original file:", \@lines) if $opt_print_filter_stages;
     @lines = rm_blanks(\@lines, $language, \%EOL_Continuation_re); # remove blank lines
-    print "   call_counter: total_lines=$total_lines  blank_lines=",
-        scalar(@lines), "\n" if $opt_v > 2;
     my $blank_lines = $total_lines - scalar @lines;
+    print "   call_counter: total_lines=$total_lines  blank_lines=",
+        $blank_lines, "\n" if $opt_v > 2;
     print_lines($file, "Blank lines removed:", \@lines)
         if $opt_print_filter_stages;
 
@@ -6206,12 +6560,12 @@ sub write_file {                             # {{{1
     mkpath($volume . $directories, 1, 0777);
 
     my $OUT = undef;
-    unlink $file;
+    unlink_file($file);
     if ($opt_file_encoding) {
 #       $OUT = IO::File->new($file, ">:$opt_file_encoding");  # doesn't work?
-        open($OUT, "> :encoding($opt_file_encoding)", $file);
+        $OUT = open_file(">:encoding($opt_file_encoding)", $file, 0);
     } else {
-        $OUT = new IO::File $file, "w";
+        $OUT = open_file('>', $file, 1);
     }
 
     my $n_col = undef;
@@ -6284,7 +6638,7 @@ sub write_file {                             # {{{1
     }
     $OUT->close;
 
-    if (-r $file) {
+    if (can_read($file)) {
         print "Wrote $file" unless $opt_quiet;
         print ", $CLOC_XSL" if $opt_xsl and $opt_xsl eq $CLOC_XSL;
         print "\n" unless $opt_quiet;
@@ -6375,7 +6729,7 @@ sub read_file  {                             # {{{1
         );
 
     my @lines = ();
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (defined $IN) {
         @lines = <$IN>;
         $IN->close;
@@ -6426,16 +6780,29 @@ sub rm_blanks {                              # {{{1
     } else {
         # removes blank lines
         if (defined $rh_EOL_continuation_re->{$language}) {
-            @out = remove_matches_2re($ra_in, '^\s*$',
+            @out = remove_matches_2re($ra_in, blank_regex($language),
                                       $rh_EOL_continuation_re->{$language});
         } else {
-            @out = remove_matches($ra_in, '^\s*$');
+            @out = remove_matches($ra_in, blank_regex($language));
         }
     }
 
     print "<- rm_blanks(language=$language, n_remain= ",
         scalar(@out), "\n" if $opt_v > 2;
     return @out;
+} # 1}}}
+sub blank_regex {                            # {{{1
+    my ($language) = @_;
+
+    print "-> blank_regex(language=$language)\n" if $opt_v > 2;
+
+    my $blank_regex = '^\s*$';
+    if ($language eq "X++") {
+        $blank_regex = '^\s*#?\s*$';
+    }
+
+    print "<- blank_regex(language=$language) = \"", $blank_regex, "\"\n" if $opt_v > 2;
+    return $blank_regex;
 } # 1}}}
 sub rm_comments {                            # {{{1
     my ($ra_lines , # in, must be free of blank lines
@@ -7409,10 +7776,10 @@ sub smarty_to_C {                            # {{{1
 sub determine_lit_type {                     # {{{1
   my ($file) = @_;
 
-  open (FILE, $file);
-  while (<FILE>) {
-    if (m/^\\begin\{code\}/) { close FILE; return 2; }
-    if (m/^>\s/) { close FILE; return 1; }
+  my $FILE = open_file('<', $file, 0);
+  while (<$FILE>) {
+    if (m/^\\begin\{code\}/) { close $FILE; return 2; }
+    if (m/^>\s/) { close $FILE; return 1; }
   }
 
   return 0;
@@ -7569,8 +7936,7 @@ sub set_constants {                          # {{{1
             'auk'         => 'awk'                   ,
             'awk'         => 'awk'                   ,
             'bash'        => 'Bourne Again Shell'    ,
-            'bzl'         => 'Bazel'                 ,
-            'bazel'       => 'Bazel'                 ,
+            'bazel'       => 'Starlark'              ,
             'BUILD'       => 'Bazel'                 ,
             'dxl'         => 'DOORS Extension Language',
             'bat'         => 'DOS Batch'             ,
@@ -7588,6 +7954,7 @@ sub set_constants {                          # {{{1
             'bzl'         => 'Starlark'              ,
             'btp'         => 'BizTalk Pipeline'      ,
             'odx'         => 'BizTalk Orchestration' ,
+            'carbon'      => 'Carbon'                ,
             'cpy'         => 'COBOL'                 ,
             'cobol'       => 'COBOL'                 ,
             'ccp'         => 'COBOL'                 ,
@@ -7632,6 +7999,9 @@ sub set_constants {                          # {{{1
             '_coffee'     => 'CoffeeScript'          ,
             'coffee'      => 'CoffeeScript'          ,
             'component'   => 'Visualforce Component' ,
+            'cg3'         => 'Constraint Grammar'    ,
+            'rlx'         => 'Constraint Grammar'    ,
+            'Containerfile'  => 'Containerfile'      ,
             'cpp'         => 'C++'                   ,
             'CPP'         => 'C++'                   ,
             'cr'          => 'Crystal'               ,
@@ -7650,6 +8020,8 @@ sub set_constants {                          # {{{1
 # bash or sh scripts
             'da'          => 'DAL'                   ,
             'dart'        => 'Dart'                  ,
+            'dsc'         => 'DenizenScript'         ,
+            'derw'        => 'Derw'                  ,
             'def'         => 'Windows Module Definition',
             'dhall'       => 'dhall'                 ,
             'dt'          => 'DIET'                  ,
@@ -7695,6 +8067,8 @@ sub set_constants {                          # {{{1
             'exp'         => 'Expect'                ,
             '4th'         => 'Forth'                 ,
             'fish'        => 'Fish Shell'            ,
+            'fsl'         => 'Finite State Language' ,
+            'jssm'        => 'Finite State Language' ,
             'fnl'         => 'Fennel'                ,
             'forth'       => 'Forth'                 ,
             'fr'          => 'Forth'                 ,
@@ -7724,10 +8098,12 @@ sub set_constants {                          # {{{1
             'fs'          => 'F#/Forth'              ,
             'fsi'         => 'F#'                    ,
             'fsx'         => 'F# Script'             ,
+            'fut'         => 'Futhark'               ,
             'fxml'        => 'FXML'                  ,
             'gnumakefile' => 'make'                  ,
             'Gnumakefile' => 'make'                  ,
             'gd'          => 'GDScript'              ,
+            'gdshader'    => 'Godot Shaders'         ,
             'vshader'     => 'GLSL'                  ,
             'vsh'         => 'GLSL'                  ,
             'vrx'         => 'GLSL'                  ,
@@ -7738,6 +8114,7 @@ sub set_constants {                          # {{{1
             'fsh'         => 'GLSL'                  ,
             'frg'         => 'GLSL'                  ,
             'fp'          => 'GLSL'                  ,
+            'fbs'         => 'Flatbuffers'           ,
             'glsl'        => 'GLSL'                  ,
             'graphqls'    => 'GraphQL'               ,
             'gql'         => 'GraphQL'               ,
@@ -7785,13 +8162,16 @@ sub set_constants {                          # {{{1
             'haml'        => 'Haml'                  ,
             'handlebars'  => 'Handlebars'            ,
             'hbs'         => 'Handlebars'            ,
+            'ha'          => 'Hare'                  ,
             'hxsl'        => 'Haxe'                  ,
             'hx'          => 'Haxe'                  ,
+            'HC'          => 'HolyC'                 ,
             'hoon'        => 'Hoon'                  ,
             'xht'         => 'HTML'                  ,
             'html.hl'     => 'HTML'                  ,
             'htm'         => 'HTML'                  ,
             'html'        => 'HTML'                  ,
+            'heex'        => 'HTML EEx'              ,
             'i3'          => 'Modula3'               ,
             'ice'         => 'Slice'                 ,
             'icl'         => 'Clean'                 ,
@@ -7820,6 +8200,7 @@ sub set_constants {                          # {{{1
             'java'        => 'Java'                  ,
             'jcl'         => 'JCL'                   , # IBM Job Control Lang.
             'jl'          => 'Lisp/Julia'            ,
+            'jai'         => 'Jai'                   ,
             'xsjslib'     => 'JavaScript'            ,
             'xsjs'        => 'JavaScript'            ,
             'ssjs'        => 'JavaScript'            ,
@@ -7827,6 +8208,7 @@ sub set_constants {                          # {{{1
             'pac'         => 'JavaScript'            ,
             'njs'         => 'JavaScript'            ,
             'mjs'         => 'JavaScript'            ,
+            'cjs'         => 'JavaScript'            ,
             'jss'         => 'JavaScript'            ,
             'jsm'         => 'JavaScript'            ,
             'jsfl'        => 'JavaScript'            ,
@@ -7869,6 +8251,7 @@ sub set_constants {                          # {{{1
             'jspf'        => 'JSP'                   , # Java server pages
             'junos'       => 'Juniper Junos'         ,
             'vm'          => 'Velocity Template Language' ,
+            'kv'          => 'kvlang'                ,
             'ksc'         => 'Kermit'                ,
             'ksh'         => 'Korn Shell'            ,
             'ktm'         => 'Kotlin'                ,
@@ -7879,6 +8262,8 @@ sub set_constants {                          # {{{1
             'lhs'         => 'Haskell'               ,
             'lex'         => 'lex'                   ,
             'l'           => 'lex'                   ,
+            'ld'          => 'Linker Script'         ,
+            'lem'         => 'Lem'                   ,
             'less'        => 'LESS'                  ,
             'lfe'         => 'LFE'                   ,
             'liquid'      => 'liquid'                ,
@@ -7915,6 +8300,7 @@ sub set_constants {                          # {{{1
             'mg'          => 'Modula3'               ,
             'mojom'       => 'Mojo'                  ,
             'meson.build' => 'Meson'                 ,
+            'metal'       => 'Metal'                 ,
             'mk'          => 'make'                  ,
 #           'mli'         => 'ML'                    , # ML not implemented
 #           'ml'          => 'ML'                    ,
@@ -7942,10 +8328,13 @@ sub set_constants {                          # {{{1
             'wixproj'     => 'MSBuild script'        ,
             'btproj'      => 'MSBuild script'        ,
             'msbuild'     => 'MSBuild script'        ,
+            'ixx'         => 'Visual Studio Module'  ,
             'sln'         => 'Visual Studio Solution',
             'mps'         => 'MUMPS'                 ,
             'mth'         => 'Teamcenter mth'        ,
             'n'           => 'Nemerle'               ,
+            'nlogo'       => 'NetLogo'               ,
+            'nls'         => 'NetLogo'               ,
             'nims'        => 'Nim'                   ,
             'nimrod'      => 'Nim'                   ,
             'nimble'      => 'Nim'                   ,
@@ -7953,6 +8342,7 @@ sub set_constants {                          # {{{1
             'nim'         => 'Nim'                   ,
             'nix'         => 'Nix'                   ,
             'nut'         => 'Squirrel'              ,
+            'njk'         => 'Nunjucks'              ,
             'odin'        => 'Odin'                  ,
             'oscript'     => 'LiveLink OScript'      ,
             'bod'         => 'Oracle PL/SQL'         ,
@@ -7999,6 +8389,7 @@ sub set_constants {                          # {{{1
             'rakumod'     => 'Raku'                  ,
             'pom.xml'     => 'Maven'                 ,
             'pom'         => 'Maven'                 ,
+            'scad'        => 'OpenSCAD'              ,
             'yap'         => 'Prolog'                ,
             'prolog'      => 'Prolog'                ,
             'P'           => 'Prolog'                ,
@@ -8079,6 +8470,8 @@ sub set_constants {                          # {{{1
             'pprx'        => 'Rexx'                  ,
             'rexx'        => 'Rexx'                  ,
             'rhtml'       => 'Ruby HTML'             ,
+            'circom'      => 'Circom'                ,
+            'cairo'       => 'Cairo'                 ,
             'rs.in'       => 'Rust'                  ,
             'rs'          => 'Rust'                  ,
             'rst.txt'     => 'reStructuredText'      ,
@@ -8095,14 +8488,24 @@ sub set_constants {                          # {{{1
             'sbl'         => 'Softbridge Basic'      ,
             'SBL'         => 'Softbridge Basic'      ,
             'sed'         => 'sed'                   ,
-            'ses'         => 'Patran Command Language'   ,
             'sp'          => 'SparForte'             ,
             'sol'         => 'Solidity'              ,
+            'p4'          => 'P4'                    ,
+            'ses'         => 'Patran Command Language'   ,
             'pcl'         => 'Patran Command Language'   ,
+            'peg'         => 'PEG'                   ,
+            'pegjs'       => 'peg.js'                ,
+            'peggy'       => 'peggy'                 ,
+            'pest'        => 'Pest'                  ,
+            'tspeg'       => 'tspeg'                 ,
+            'jspeg'       => 'tspeg'                 ,
             'pl1'         => 'PL/I'                  ,
             'plm'         => 'PL/M'                  ,
             'lit'         => 'PL/M'                  ,
+            'puml'        => 'PlantUML'              ,
+            'properties'  => 'Properties'            ,
             'po'          => 'PO File'               ,
+            'pony'        => 'Pony'                  ,
             'pbt'         => 'PowerBuilder'          ,
             'sra'         => 'PowerBuilder'          ,
             'srf'         => 'PowerBuilder'          ,
@@ -8150,7 +8553,7 @@ sub set_constants {                          # {{{1
             'rc2'         => 'Windows Resource File' ,
             'sas'         => 'SAS'                   ,
             'sass'        => 'Sass'                  ,
-            'scss'        => 'Sass'                  ,
+            'scss'        => 'SCSS'                  ,
             'sh'          => 'Bourne Shell'          ,
             'smarty'      => 'Smarty'                ,
             'sml'         => 'Standard ML'           ,
@@ -8175,9 +8578,11 @@ sub set_constants {                          # {{{1
             'svg'         => 'SVG'                   ,
             'SVG'         => 'SVG'                   ,
             'v'           => 'Verilog-SystemVerilog/Coq' ,
+            'td'          => 'TableGen'              ,
             'tcl'         => 'Tcl/Tk'                ,
             'tcsh'        => 'C Shell'               ,
             'tk'          => 'Tcl/Tk'                ,
+            'teal'        => 'TEAL'                  ,
             'mkvi'        => 'TeX'                   ,
             'mkiv'        => 'TeX'                   ,
             'mkii'        => 'TeX'                   ,
@@ -8194,6 +8599,8 @@ sub set_constants {                          # {{{1
 #           'cls'         => 'TeX'                   ,
             'dtx'         => 'TeX'                   ,
             'bst'         => 'TeX'                   ,
+            'txt'         => 'Text'                  ,
+            'text'        => 'Text'                  ,
             'tres'        => 'Godot Resource'        ,
             'tscn'        => 'Godot Scene'           ,
             'thrift'      => 'Thrift'                ,
@@ -8222,6 +8629,7 @@ sub set_constants {                          # {{{1
             'tsx'         => 'TypeScript'            ,
             'tss'         => 'Titanium Style Sheet'  ,
             'twig'        => 'Twig'                  ,
+            'um'          => 'Umka'                  ,
             'ui'          => 'Qt/Glade'              ,
             'glade'       => 'Glade'                 ,
             'vala'        => 'Vala'                  ,
@@ -8259,6 +8667,7 @@ sub set_constants {                          # {{{1
             'wsdl'        => 'Web Services Description',
             'x'           => 'Logos'                 ,
             'xm'          => 'Logos'                 ,
+            'xpo'         => 'X++'                   , # Microsoft Dynamics AX 4.0 export format
             'xmi'         => 'XMI'                   ,
             'XMI'         => 'XMI'                   ,
             'zcml'        => 'XML'                   ,
@@ -8360,6 +8769,7 @@ sub set_constants {                          # {{{1
             'xaml'        => 'XAML'                  ,
             'wast'        => 'WebAssembly'           ,
             'wat'         => 'WebAssembly'           ,
+            'wgsl'        => 'WGSL'                  ,
             'wxs'         => 'WiX source'            ,
             'wxi'         => 'WiX include'           ,
             'wxl'         => 'WiX string localization' ,
@@ -8448,24 +8858,31 @@ sub set_constants {                          # {{{1
             'build.xml'         => 'Ant/XML'            ,
             'BUILD'             => 'Bazel'              ,
             'WORKSPACE'         => 'Bazel'              ,
+            'cmakelists.txt'    => 'CMake'              ,
             'CMakeLists.txt'    => 'CMake'              ,
             'Jamfile'           => 'Jam'                ,
+            'jamfile'           => 'Jam'                ,
             'Jamrules'          => 'Jam'                ,
             'Makefile'          => 'make'               ,
             'makefile'          => 'make'               ,
             'meson.build'       => 'Meson'              ,
-            'gnumakefile'       => 'make'               ,
             'Gnumakefile'       => 'make'               ,
+            'gnumakefile'       => 'make'               ,
             'pom.xml'           => 'Maven/XML'          ,
             'Rakefile'          => 'Ruby'               ,
             'rakefile'          => 'Ruby'               ,
             'Dockerfile'        => 'Dockerfile'         ,
             'Dockerfile.m4'     => 'Dockerfile'         ,
             'Dockerfile.cmake'  => 'Dockerfile'         ,
+            'dockerfile'        => 'Dockerfile'         ,
+            'dockerfile.m4'     => 'Dockerfile'         ,
+            'dockerfile.cmake'  => 'Dockerfile'         ,
+            'Containerfile'     => 'Containerfile'      ,
             );
 # 1}}}
 %{$rh_Language_by_Prefix}     = (             # {{{1
             'Dockerfile'        => 'Dockerfile'         ,
+            'Containerfile'     => 'Containerfile'         ,
             );
 # 1}}}
 %{$rhaa_Filters_by_Language} = (            # {{{1
@@ -8531,8 +8948,8 @@ sub set_constants {                          # {{{1
                             ],
     'Assembly'           => [
                                 [ 'remove_matches'      , '^\s*#'  ],
-                                [ 'call_regexp_common'  , 'C++'    ],
                                 [ 'remove_matches'      , '^\s*;'  ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                                 [ 'remove_matches'      , '^\s*\@' ],
                                 [ 'remove_matches'      , '^\s*\|' ],
                                 [ 'remove_matches'      , '^\s*!'  ],
@@ -8604,6 +9021,11 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
                             ],
+    'Carbon'             => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Clean'              => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
@@ -8620,6 +9042,10 @@ sub set_constants {                          # {{{1
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
     'Crystal'            => [
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_inline'       , '#.*$'   ],
+                            ],
+    'Constraint Grammar' => [
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
@@ -8685,6 +9111,10 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
                             ],
+    'Containerfile'      => [
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_inline'       , '#.*$'   ],
+                            ],
     'Coq'                => [
                                 [ 'remove_between_general', '(*', '*)' ],
                             ],
@@ -8711,6 +9141,15 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'DenizenScript'      => [ # same as YAML
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_inline'       , '#.*$'   ],
+                            ],
+    'Derw'               => [
+                                [ 'remove_matches'      , '^\s*--' ],
+                                [ 'remove_between_general', '{-', '-}' ],
+                                [ 'remove_inline'       , '--.*$'  ],
                             ],
     'dhall'              => [   [ 'remove_haskell_comments', '>filename<' ], ],
     'Delphi Form'        => [ # same as Pascal
@@ -8783,7 +9222,10 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
-    'DOS Batch'          => [   [ 'remove_matches'      , '^\s*rem', ], ],
+    'DOS Batch'          => [
+                                [ 'remove_matches'      , '^\s*rem' ],
+                                [ 'remove_matches'      , '^\s*::'  ],
+                            ],
     'DTD'                => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
     'Elixir'             => [
@@ -8803,6 +9245,11 @@ sub set_constants {                          # {{{1
     'Fennel'             => [
                                 [ 'remove_matches'      , '^\s*;'  ],
                                 [ 'remove_inline'       , ';.*$'   ],
+                            ],
+    'Finite State Language' => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'Fish Shell'         => [
                                 [ 'remove_matches'      , '^\s*#'  ],
@@ -8836,6 +9283,9 @@ sub set_constants {                          # {{{1
     'Freemarker Template' => [
                                 [ 'remove_between_general', '<#--', '-->' ],
                             ],
+    'Futhark'            => [
+                                [ 'remove_matches'      , '^\s*--'  ],
+                            ],
     'FXML'               => [
                                 [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ],
@@ -8848,11 +9298,21 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'Pascal' ],
                                 [ 'remove_matches'      , '^\s*//' ],
                             ],
+    'Flatbuffers'        => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                                [ 'remove_inline'       , '//.*$'  ],
+                            ],
     'Godot Scene'        => [
                                 [ 'remove_matches'      , '^\s*;'  ],
                             ],
     'Godot Resource'     => [
                                 [ 'remove_matches'      , '^\s*;'  ],
+                            ],
+    'Godot Shaders'      => [
+                                [ 'remove_matches'      , '^\s*//' ],
+                                [ 'remove_inline'       , '//.*$'  ],
                             ],
     'GDScript'           => [
                                 [ 'remove_matches'      , '^\s*#'  ],
@@ -8900,6 +9360,8 @@ sub set_constants {                          # {{{1
                             ],
     'GraphQL'            => [
                                 [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'docstring_to_C'                 ],
+                                [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
     'Groovy'             => [
@@ -8913,6 +9375,12 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', "'''", '/*', '*/', 1],
                                 [ 'rm_comments_in_strings', "'''", '//', '', 1],
                                 [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Haml'               => [
+                                [ 'remove_haml_block'   ,          ],
+                                [ 'remove_html_comments',          ],
+                                [ 'remove_matches'      , '^\s*/\s*\S+' ],
+                                [ 'remove_matches'      , '^\s*-#\s*\S+' ],
                             ],
     'Handlebars'         => [
                                 [ 'remove_between_general', '{{!--', '--}}' ],
@@ -8931,11 +9399,9 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
                             ],
-    'Haml'               => [
-                                [ 'remove_haml_block'   ,          ],
-                                [ 'remove_html_comments',          ],
-                                [ 'remove_matches'      , '^\s*/\s*\S+' ],
-                                [ 'remove_matches'      , '^\s*-#\s*\S+' ],
+    'Hare'               => [
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'remove_matches'      , '//.*$' ],
                             ],
     'Haxe'               => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
@@ -8957,6 +9423,15 @@ sub set_constants {                          # {{{1
     'HTML'               => [
                                 [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ],
+                            ],
+    'HTML EEx'           => [
+                                [ 'remove_matches'       , '^\s*<% #' ],
+                                [ 'remove_between_general', '<%!--', '--%>' ],
+                            ],
+    'HolyC'              => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'Hoon'               => [
                                 [ 'remove_matches'      , '^\s*:[:><]' ],
@@ -8993,6 +9468,11 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'HTML'   ],
                             ],
     'IPL'                => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Jai'                => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
@@ -9067,6 +9547,9 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
+    'kvlang'             => [
+                                ["remove_matches", '^\s*#[^:]'],
+                            ],
     'Kotlin'             => [
                                 [ 'rm_comments_in_strings', '"""', '/*', '*/', 1],
                                 [ 'rm_comments_in_strings', '"""', '//', '', 1],
@@ -9079,6 +9562,9 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'      , '^\s*--' ],
                                 [ 'remove_inline'       , '--.*$'  ],
                             ],
+    'Lem'                => [
+                                [ 'remove_OCaml_comments',         ],
+                            ],
     'LESS'               => [
 #                               [ 'remove_matches'      , '^\s*//' ],
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
@@ -9088,6 +9574,10 @@ sub set_constants {                          # {{{1
     'LFE'                => [
                                 [ 'remove_matches'      , '^\s*;'  ],
                                 [ 'remove_between_general', '#|', '|#' ],
+                            ],
+    'Linker Script'      => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/'],
+                                [ 'call_regexp_common',     'C'            ],
                             ],
     'liquid'             => [
                                 [ 'remove_between_general', '{% comment %}',
@@ -9152,6 +9642,11 @@ sub set_constants {                          # {{{1
                                 [ 'remove_inline'       , '%.*$'   ],
                                 [ 'remove_matches'      , '^\s*%'  ],
                             ],
+    'Metal'              => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Modula3'            => [   [ 'call_regexp_common'  , 'Pascal' ], ],
         # Modula 3 comments are (* ... *) so applying the Pascal filter
         # which also treats { ... } as a comment is not really correct.
@@ -9160,6 +9655,9 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Nunjucks'           => [
+                                [ 'remove_between_general', '{#', '#}' ],
                             ],
     'Objective-C'        => [
 #                               [ 'remove_matches'      , '^\s*//' ],
@@ -9174,6 +9672,7 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'OCaml'              => [
+                                [ 'rm_comments_in_strings', '"', '(*', '*)', 1 ],
                                 [ 'remove_OCaml_comments',         ],
                             ],
     'OpenCL'             => [
@@ -9186,6 +9685,7 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'       , '##.*$'  ],
                             ],
     'Markdown'           => [
+                                [ 'remove_between_general', '<!--', '-->' ],
                                 [ 'remove_between_regex',
                                   '\[(comment|\/\/)?\]\s*:?\s*(<\s*>|#)?\s*\(.*?', '.*?\)' ],
                                 # http://stackoverflow.com/questions/4823468/comments-in-markdown
@@ -9202,6 +9702,10 @@ sub set_constants {                          # {{{1
 #                               [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
+    'NetLogo'            => [
+                                [ 'remove_matches'      , '^\s*;'  ],
+                                [ 'remove_inline'       , ';.*$'   ],
+                            ],
     'Nix'                => [
                                 [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_matches'      , '^\s*#'  ],
@@ -9212,6 +9716,11 @@ sub set_constants {                          # {{{1
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
     'Odin'               => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'OpenSCAD'           => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
@@ -9236,28 +9745,56 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C'       ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
-    'PureScript'         => [
-                                [ 'remove_matches'      , '^\s*--' ],
-                                [ 'remove_between_general', '{-', '-}' ],
-                                [ 'remove_inline'       , '--.*$'  ],
+    'P4'                 => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'Patran Command Language'=> [
                                 [ 'remove_matches'      , '^\s*#'   ],
                                 [ 'remove_matches'      , '^\s*\$#' ],
                                 [ 'call_regexp_common'  , 'C'       ],
                             ],
+    'Perl'               => [   [ 'remove_below'        , '^__(END|DATA)__'],
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_below_above'  , '^=head1', '^=cut'  ],
+                                [ 'remove_inline'       , '#.*$'   ],
+                            ],
+    'PEG'                => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'peg.js'             => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'peggy'              => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Pest'               => [
+                                [ 'remove_matches'      , '^\s*//'  ],
+                                [ 'remove_inline'       , '//.*$'   ],
+                            ],
+    'tspeg'              => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Perl/Prolog'        => [ [ 'die' ,          ], ], # never called
     'PL/I'               => [
                                 [ 'call_regexp_common'  , 'C'      ],
                             ],
     'PL/M'               => [
                                 [ 'call_regexp_common'  , 'C'      ],
                             ],
-    'Perl'               => [   [ 'remove_below'        , '^__(END|DATA)__'],
-                                [ 'remove_matches'      , '^\s*#'  ],
-                                [ 'remove_below_above'  , '^=head1', '^=cut'  ],
-                                [ 'remove_inline'       , '#.*$'   ],
+    'PlantUML'           => [
+                                [ 'remove_between_general', "/'", "'/" ],
+                                [ 'remove_matches'      , "^\\s*'" ],
                             ],
-    'Perl/Prolog'        => [ [ 'die' ,          ], ], # never called
     'Pig Latin'          => [
                                 [ 'remove_matches'      , '^\s*--' ],
                                 [ 'remove_inline'       , '--.*$'  ],
@@ -9269,6 +9806,12 @@ sub set_constants {                          # {{{1
                             ],
     'PO File'            => [
                                 [ 'remove_matches'      , '^\s*#[^,]' ],  # '#,' is not a comment
+                            ],
+    'Pony'               => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'docstring_to_C'                 ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'PowerBuilder'       => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
@@ -9286,6 +9829,10 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '(//|\%).*$' ],
                             ],
+    'Properties'         => [
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_matches'      , '^\s*!'  ],
+                            ],
     'Protocol Buffers'   => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
@@ -9295,6 +9842,11 @@ sub set_constants {                          # {{{1
                                 [ 'remove_pug_block'    ,          ],
                                 [ 'remove_matches'      , '^\s*//' ],
                                 [ 'remove_inline'       , '//.*$'  ],
+                            ],
+    'PureScript'         => [
+                                [ 'remove_matches'      , '^\s*--' ],
+                                [ 'remove_between_general', '{-', '-}' ],
+                                [ 'remove_inline'       , '--.*$'  ],
                             ],
     'Python'             => [
                                 [ 'remove_matches'      , '/\*'    ],
@@ -9405,6 +9957,17 @@ sub set_constants {                          # {{{1
                             ],
     'Ruby HTML'          => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
+    'Circom'             => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Cairo'              => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Rust'               => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
@@ -9419,8 +9982,9 @@ sub set_constants {                          # {{{1
                                 [ 'remove_between_general', '*', ';' ],
                             ],
     'Sass'               => [
-                                [ 'remove_matches'      , '^\s*//' ],
-                                [ 'remove_inline'       , '//.*$'  ],
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'Scala'              => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
@@ -9431,6 +9995,11 @@ sub set_constants {                          # {{{1
     'Scheme'             => [
                                 [ 'remove_matches'      , '^\s*;'  ],
                                 [ 'remove_inline'       , ';.*$'   ],
+                            ],
+    'SCSS'               => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
                             ],
     'sed'                => [
                                 [ 'remove_matches'      , '^\s*#'  ],
@@ -9566,15 +10135,26 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_inline'       , '#.*$'   ],
                             ],
+    'TableGen'           => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Tcl/Tk'             => [
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_inline'       , '#.*$'   ],
+                            ],
+    'TEAL'               => [
+                                [ 'remove_matches'      , '^\s*//' ],
                             ],
     'Teamcenter met'     => [   [ 'call_regexp_common'  , 'C'      ], ],
     'Teamcenter mth'     => [   [ 'remove_matches'      , '^\s*#'  ], ],
     'TeX'                => [
                                 [ 'remove_matches'      , '^\s*%'  ],
                                 [ 'remove_inline'       , '%.*$'   ],
+                            ],
+    'Text'               => [
+                                [ 'remove_matches'      , '^\s*$'  ],
                             ],
     'Thrift'             => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
@@ -9609,6 +10189,11 @@ sub set_constants {                          # {{{1
                                 [ 'remove_between_general', '{#', '#}' ],
                             ],
     'TypeScript'         => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
+    'Umka'               => [
                                 [ 'rm_comments_in_strings', '"', '/*', '*/' ],
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C++'    ],
@@ -9752,6 +10337,11 @@ sub set_constants {                          # {{{1
     'WebAssembly'           => [
                                 [ 'remove_matches'      , '^\s*;;' ],
                             ],
+    'WGSL'               => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Windows Message File'  => [
                                 [ 'remove_matches'      , '^\s*;\s*//' ],
                                 [ 'call_regexp_common'  , 'C'          ],
@@ -9786,6 +10376,13 @@ sub set_constants {                          # {{{1
                                 [ 'rm_comments_in_strings', '"', '//', '' ],
                                 [ 'call_regexp_common'  , 'C'      ],
                             ],
+    'X++'                => [
+                                [ 'remove_matches', '\s*#\s*//' ],
+                                [ 'remove_between_regex', '#\s*/\*', '\*/' ],
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'XMI'                => [
                                 [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ],
@@ -9814,6 +10411,11 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
     'MSBuild script'    => [    [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
+    'Visual Studio Module' => [
+                                [ 'rm_comments_in_strings', '"', '/*', '*/' ],
+                                [ 'rm_comments_in_strings', '"', '//', '' ],
+                                [ 'call_regexp_common'  , 'C++'    ],
+                            ],
     'Visual Studio Solution' => [
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_html_comments',          ],
@@ -9849,6 +10451,7 @@ sub set_constants {                          # {{{1
     'D'                  =>     '\\\\$'         ,
     'Dart'               =>     '\\\\$'         ,
     'Expect'             =>     '\\\\$'         ,
+    'Futhark'            =>     '\\\\$'         ,
     'Gencat NLS'         =>     '\\\\$'         ,
     'Go'                 =>     '\\\\$'         ,
     'IDL'                =>     '\$\\$'         ,
@@ -9862,6 +10465,7 @@ sub set_constants {                          # {{{1
     'make'               =>     '\\\\$'         ,
     'MATLAB'             =>     '\.\.\.\s*$'    ,
     'Meson'              =>     '\\\\$'         ,
+    'Metal'              =>     '\\\\$'         ,
     'MXML'               =>     '\\\\$'         ,
     'Objective-C'        =>     '\\\\$'         ,
     'Objective-C++'      =>     '\\\\$'         ,
@@ -9880,6 +10484,7 @@ sub set_constants {                          # {{{1
     'Bourne Again Shell' =>     '\\\\$'         ,
     'Bourne Shell'       =>     '\\\\$'         ,
     'C Shell'            =>     '\\\\$'         ,
+    'kvlang'             =>     '\\\\$'         ,
     'Kermit'             =>     '\\\\$'         ,
     'Korn Shell'         =>     '\\\\$'         ,
     'Starlark'           =>     '\\\\$'         ,
@@ -9892,6 +10497,7 @@ sub set_constants {                          # {{{1
     'lex'                =>     '\\\\$'         ,
     'Vala'               =>     '\\\\$'         ,
     'Vala Header'        =>     '\\\\$'         ,
+    'X++'                =>     '\\\\$'         ,
     'zsh'                =>     '\\\\$'         ,
     );
 # 1}}}
@@ -9915,6 +10521,7 @@ sub set_constants {                          # {{{1
    'bdf'       => 1,
    'bmp'       => 1,
    'bz2'       => 1,  # bzip2(1) compressed file
+   'csv'       => 1,
    'desktop'   => 1,
    'dic'       => 1,
    'doc'       => 1,
@@ -9923,6 +10530,7 @@ sub set_constants {                          # {{{1
    'fig'       => 1,
    'gif'       => 1,
    'gz'        => 1,
+   'h5'        => 1,  # hierarchical data format
    'hdf'       => 1,  # hierarchical data format
    'in'        => 1,  # Debatable.
    'jpg'       => 1,
@@ -9937,20 +10545,22 @@ sub set_constants {                          # {{{1
    'pdf'       => 1,
    'pfb'       => 1,
    'png'       => 1,
+   'ppt'       => 1,
+   'pptx'      => 1,
    'ps'        => 1,  # Postscript is _USUALLY_ generated automatically.
    'sgm'       => 1,
    'sgml'      => 1,
    'so'        => 1,  # Dynamically-loaded object code.
    'Tag'       => 1,
-   'text'      => 1,
    'tfm'       => 1,
    'tgz'       => 1,  # gzipped tarball
    'tiff'      => 1,
    'tsv'       => 1,  # tab separated values
-   'txt'       => 1,
    'vf'        => 1,
    'wav'       => 1,
    'xbm'       => 1,
+   'xls'       => 1,
+   'xlsx'      => 1,
    'xpm'       => 1,
    'Y'         => 1,  # file compressed with "Yabba"
    'Z'         => 1,  # file compressed with "compress"
@@ -10049,54 +10659,22 @@ sub set_constants {                          # {{{1
     'C# Generated'                 =>   1.36,
     'Cake Build Script'            =>   1.36,
     'C++'                          =>   1.51,
-    'c86plus'                      =>   0.63,
-    'cadbfast'                     =>   2.00,
-    'caearl'                       =>   2.86,
-    'cast'                         =>   1.63,
-    'cbasic'                       =>   0.88,
-    'cdadl'                        =>   4.00,
-    'cellsim'                      =>   1.74,
+    'Carbon'                       =>   1.51,
     'ColdFusion'                   =>   4.00,
     'ColdFusion CFScript'          =>   4.00,
     'Chapel'                       =>   2.96,
-    'chili'                        =>   0.75,
-    'chill'                        =>   0.75,
-    'cics'                         =>   1.74,
-    'clarion'                      =>   1.38,
-    'clascal'                      =>   1.00,
     'Clean'                        =>   2.50,
-    'cli'                          =>   2.50,
-    'clipper'                      =>   2.05,
-    'clipper db'                   =>   2.00,
-    'clos'                         =>   3.81,
     'Clojure'                      =>   1.25,
     'ClojureScript'                =>   1.25,
     'ClojureC'                     =>   1.25,
-    'clout'                        =>   2.00,
     'CMake'                        =>   1.00,
-    'cms2'                         =>   0.75,
-    'cmsgen'                       =>   4.21,
     'COBOL'                        =>   1.04,
     'COBOL ii'                     =>   0.75,
     'COBOL/400'                    =>   0.88,
-    'cobra'                        =>   4.00,
-    'codecenter'                   =>   2.22,
-    'cofac'                        =>   2.22,
     'CoffeeScript'                 =>   2.00,
-    'cogen'                        =>   2.22,
-    'cognos'                       =>   2.22,
-    'cogo'                         =>   1.13,
-    'comal'                        =>   1.00,
-    'comit ii'                     =>   1.25,
-    'common lisp'                  =>   1.25,
-    'concurrent pascal'            =>   1.00,
-    'conniver'                     =>   1.25,
-    'cool:gen/ief'                 =>   2.58,
+    'Constraint Grammar'           =>   4.00,
+    'Containerfile'                =>   2.00,
     'Coq'                          =>   5.00,
-    'coral 66'                     =>   0.75,
-    'corvet'                       =>   4.21,
-    'corvision'                    =>   5.33,
-    'cpl'                          =>   0.50,
     'Crystal'                      =>   2.50,
     'Crystal Reports'              =>   4.00,
     'csl'                          =>   1.63,
@@ -10107,80 +10685,35 @@ sub set_constants {                          # {{{1
     'CSV'                          =>   0.1,
     'Cucumber'                     =>   3.00,
     'CUDA'                         =>   1.00,
-    'culprit'                      =>   1.57,
-    'cxpert'                       =>   1.63,
-    'cygnet'                       =>   4.21,
     'D'                            =>   1.70,
     'DAL'                          =>   1.50,
     'Dart'                         =>   2.00,
-    'data base default'            =>   2.00,
-    'dataflex'                     =>   2.00,
-    'datatrieve'                   =>   4.00,
-    'dbase iii'                    =>   2.00,
-    'dbase iv'                     =>   1.54,
+    'DenizenScript'                =>   1.00,
     'Delphi Form'                  =>   2.00,
     'DIET'                         =>   2.00,
     'diff'                         =>   1.00,
-    'decision support default'     =>   2.22,
-    'decrally'                     =>   2.00,
-    'delphi'                       =>   2.76,
+    'Derw'                         =>   3.00,
     'dhall'                        =>   2.11,
     'DITA'                         =>   1.90,
-    'dl/1'                         =>   2.00,
     'dtrace'                       =>   2.00,
     'NASTRAN DMAP'                 =>   2.35,
-    'dna4'                         =>   4.21,
     'DOORS Extension Language'     =>   1.50,
     'Dockerfile'                   =>   2.00,
     'DOS Batch'                    =>   0.63,
     'Drools'                       =>   2.00,
-    'dsp assembly'                 =>   0.50,
-    'dtabl'                        =>   1.74,
-    'dtipt'                        =>   1.74,
-    'dyana'                        =>   1.13,
-    'dynamoiii'                    =>   1.74,
-    'easel'                        =>   2.76,
-    'easy'                         =>   1.63,
-    'easytrieve+'                  =>   2.35,
-    'eclipse'                      =>   1.63,
     'ECPP'                         =>   1.90,
     'eda/sql'                      =>   6.67,
     'edscheme 3.4'                 =>   1.51,
     'EEx'                          =>   2.00,
-    'eiffel'                       =>   3.81,
     'EJS'                          =>   2.50,
     'Elixir'                       =>   2.11,
     'Elm'                          =>   2.50,
-    'enform'                       =>   1.74,
-    'englishbased default'         =>   1.51,
-    'ensemble'                     =>   2.76,
-    'epos'                         =>   4.00,
     'Embedded Crystal'             =>   2.00,
     'ERB'                          =>   2.00,
     'Erlang'                       =>   2.11,
-    'esf'                          =>   2.00,
-    'espadvisor'                   =>   1.63,
-    'espl/i'                       =>   1.13,
-    'euclid'                       =>   0.75,
-    'excel'                        =>   1.74,
-    'excel 12'                     =>  13.33,
-    'excel 34'                     =>  13.33,
-    'excel 5'                      =>  13.33,
-    'express'                      =>   2.22,
-    'exsys'                        =>   1.63,
-    'extended common lisp'         =>   1.43,
-    'eznomad'                      =>   2.22,
-    'facets'                       =>   4.00,
-    'factorylink iv'               =>   2.76,
-    'fame'                         =>   2.22,
     'Fennel'                       =>   2.50,
-    'filemaker pro'                =>   2.22,
-    'flavors'                      =>   2.76,
-    'flex'                         =>   1.74,
-    'flexgen'                      =>   2.76,
+    'Finite State Language'        =>   2.00,
     'Focus'                        =>   1.90,
-    'foil'                         =>   1.51,
-    'forte'                        =>   4.44,
     'Forth'                        =>   1.25,
     'Fortran 66'                   =>   0.63,
     'Fortran 77'                   =>   0.75,
@@ -10188,49 +10721,42 @@ sub set_constants {                          # {{{1
     'Fortran 95'                   =>   1.13,
     'Fortran II'                   =>   0.63,
     'foundation'                   =>   2.76,
-    'foxpro'                       =>   2.29,
-    'foxpro 1'                     =>   2.00,
-    'foxpro 2.5'                   =>   2.35,
-    'framework'                    =>  13.33,
     'Freemarker Template'          =>   1.48,
+    'Futhark'                      =>   3.00, # Guessed from value of ML
     'F#'                           =>   2.50,
     'F# Script'                    =>   2.50,
-    'g2'                           =>   1.63,
-    'gamma'                        =>   5.00,
-    'genascript'                   =>   2.96,
-    'gener/ol'                     =>   6.15,
-    'genexus'                      =>   5.33,
-    'genifer'                      =>   4.21,
-    'geode 2.0'                    =>   5.00,
-    'gfa basic'                    =>   2.35,
+    'Flatbuffers'                  =>   2.50,
     'Glade'                        =>   2.00,
     'Gleam'                        =>   2.50,
     'GLSL'                         =>   2.00,
     'gml'                          =>   1.74,
-    'golden common lisp'           =>   1.25,
     'gpss'                         =>   1.74,
     'guest'                        =>   2.86,
     'guru'                         =>   1.63,
     'GDScript'                     =>   2.50,
     'Godot Scene'                  =>   2.50,
     'Godot Resource'               =>   2.50,
+    'Godot Shaders'                =>   2.50,
     'Go'                           =>   2.50,
     'Gradle'                       =>   4.00,
     'Grails'                       =>   1.48,
     'GraphQL'                      =>   4.00,
     'Groovy'                       =>   4.10,
     'gw basic'                     =>   0.82,
-    'Harbour'                      =>   2.00,
-    'Haskell'                      =>   2.11,
     'HCL'                          =>   2.50,
     'high c'                       =>   0.63,
     'hlevel'                       =>   1.38,
     'hp basic'                     =>   0.63,
     'Haml'                         =>   2.50,
     'Handlebars'                   =>   2.50,
+    'Harbour'                      =>   2.00,
+    'Hare'                         =>   2.50,
+    'Haskell'                      =>   2.11,
     'Haxe'                         =>   2.00,
+    'HolyC'                        =>   2.50,
     'Hoon'                         =>   2.00,
     'HTML'                         =>   1.90,
+    'HTML EEx'                     =>   3.00,
     'XHTML'                        =>   1.90,
     'XMI'                          =>   1.90,
     'XML'                          =>   1.90,
@@ -10241,48 +10767,18 @@ sub set_constants {                          # {{{1
     'XSD'                          =>   1.90,
     'NAnt script'                  =>   1.90,
     'MSBuild script'               =>   1.90,
+    'Visual Studio Module'         =>   1.00,
     'Visual Studio Solution'       =>   1.00,
     'HLSL'                         =>   2.00,
-    'HTML 2'                       =>   5.00,
-    'HTML 3'                       =>   5.33,
-    'huron'                        =>   5.00,
-    'ibm adf i'                    =>   4.00,
-    'ibm adf ii'                   =>   4.44,
-    'ibm advanced basic'           =>   0.82,
-    'ibm cics/vs'                  =>   2.00,
-    'ibm compiled basic'           =>   0.88,
-    'ibm vs cobol'                 =>   0.75,
-    'ibm vs cobol ii'              =>   0.88,
-    'ices'                         =>   1.13,
-    'icon'                         =>   1.00,
-    'ideal'                        =>   1.54,
-    'idms'                         =>   2.00,
     'Idris'                        =>   2.00,
     'Literate Idris'               =>   2.00,
-    'ief'                          =>   5.71,
-    'ief/cool:gen'                 =>   2.58,
-    'iew'                          =>   5.71,
-    'ifps/plus'                    =>   2.50,
     'Igor Pro'                     =>   4.00,
     'Imba'                         =>   3.00,
-    'imprs'                        =>   2.00,
-    'informix'                     =>   2.58,
-    'ingres'                       =>   2.00,
     'INI'                          =>   1.00,
-    'inquire'                      =>   6.15,
-    'insight2'                     =>   1.63,
-    'install/1'                    =>   5.00,
     'InstallShield'                =>   1.90,
-    'intellect'                    =>   1.51,
-    'interlisp'                    =>   1.38,
-    'interpreted basic'            =>   0.75,
-    'interpreted c'                =>   0.63,
     'IPL'                          =>   2.00,
-    'iqlisp'                       =>   1.38,
-    'iqrp'                         =>   6.15,
-    'j2ee'                         =>   1.60,
+    'Jai'                          =>   1.13,
     'Jam'                          =>   2.00,
-    'janus'                        =>   1.13,
     'Java'                         =>   1.36,
     'JavaScript'                   =>   1.48,
     'JavaServer Faces'             =>   1.5 ,
@@ -10293,182 +10789,77 @@ sub set_constants {                          # {{{1
     'JSX'                          =>   1.48,
     'Velocity Template Language'   =>   1.00,
     'JCL'                          =>   1.67,
-    'joss'                         =>   0.75,
-    'jovial'                       =>   0.75,
-    'jsp'                          =>   1.36,
     'Juniper Junos'                =>   2.00,
-    'kappa'                        =>   2.00,
-    'kbms'                         =>   1.63,
-    'kcl'                          =>   1.25,
-    'kee'                          =>   1.63,
-    'keyplus'                      =>   2.00,
-    'kl'                           =>   1.25,
-    'klo'                          =>   1.25,
-    'knowol'                       =>   1.63,
-    'krl'                          =>   1.38,
+    'kvlang'                       =>   2.00,
     'Kermit'                       =>   2.00,
     'Korn Shell'                   =>   3.81,
     'Kotlin'                       =>   2.00,
-    'ladder logic'                 =>   2.22,
-    'lambit/l'                     =>   1.25,
-    'lattice c'                    =>   0.63,
     'Lean'                         =>   3.00,
     'LESS'                         =>   1.50,
+    'Lem'                          =>   3.00,
     'LFE'                          =>   1.25,
-    'liana'                        =>   0.63,
-    'lilith'                       =>   1.13,
-    'linc ii'                      =>   5.71,
+    'Linker Script'                =>   1.00,
     'liquid'                       =>   3.00,
     'Lisp'                         =>   1.25,
     'LiveLink OScript'             =>   3.5 ,
     'LLVM IR'                      =>   0.90,
-    'loglisp'                      =>   1.38,
     'Logos'                        =>   2.00,
     'Logtalk'                      =>   2.00,
-    'loops'                        =>   3.81,
-    'lotus 123 dos'                =>  13.33,
-    'lotus macros'                 =>   0.75,
-    'lotus notes'                  =>   3.64,
-    'lucid 3d'                     =>  13.33,
-    'lyric'                        =>   1.51,
     'm4'                           =>   1.00,
-    'm'                            =>   5.00,
-    'macforth'                     =>   1.25,
-    'mach1'                        =>   2.00,
-    'machine language'             =>   0.13,
-    'maestro'                      =>   5.00,
-    'magec'                        =>   5.00,
-    'magik'                        =>   3.81,
-    'Lake'                         =>   3.81,
     'make'                         =>   2.50,
-    'Mako'                         =>   1.50, # Not sure about the scaling.
-    'mantis'                       =>   2.96,
-    'mapper'                       =>   0.99,
-    'mark iv'                      =>   2.00,
-    'mark v'                       =>   2.22,
+    'Mako'                         =>   1.50,
     'Markdown'                     =>   1.00,
     'mathcad'                      =>  16.00,
     'Maven'                        =>   1.90,
-    'mdl'                          =>   2.22,
-    'mentor'                       =>   1.51,
-    'mesa'                         =>   0.75,
     'Meson'                        =>   1.00,
-    'microfocus cobol'             =>   1.00,
-    'microforth'                   =>   1.25,
-    'microsoft c'                  =>   0.63,
-    'microstep'                    =>   4.00,
-    'miranda'                      =>   2.00,
-    'model 204'                    =>   2.11,
-    'modula 2'                     =>   1.00,
-    'mosaic'                       =>  13.33,
-    # 'ms c ++ v. 7'                 =>   1.51,
-    'ms compiled basic'            =>   0.88,
-    'msl'                          =>   1.25,
-    'mulisp'                       =>   1.25,
+    'Metal'                        =>   1.51,
     'MUMPS'                        =>   4.21,
     'Mustache'                     =>   1.75,
     'Nastran'                      =>   1.13,
-    'natural'                      =>   1.54,
-    'natural 1'                    =>   1.51,
-    'natural 2'                    =>   1.74,
-    'natural construct'            =>   3.20,
-    'natural language'             =>   0.03,
     'Nemerle'                      =>   2.50,
-    'netron/cap'                   =>   4.21,
-    'nexpert'                      =>   1.63,
-    'nial'                         =>   1.63,
+    'NetLogo'                      =>   4.00,
     'Nim'                          =>   2.00,
     'Nix'                          =>   2.70,
-    'nomad2'                       =>   2.00,
-    'nonprocedural default'        =>   2.22,
-    'notes vip'                    =>   2.22,
-    'nroff'                        =>   1.51,
-    'object assembler'             =>   1.25,
-    'object lisp'                  =>   2.76,
-    'object logo'                  =>   2.76,
-    'object pascal'                =>   2.76,
-    'object star'                  =>   5.00,
+    'Nunjucks'                     =>   1.5 ,
     'Objective-C'                  =>   2.96,
     'Objective-C++'                =>   2.96,
-    'objectoriented default'       =>   2.76,
-    'objectview'                   =>   3.20,
     'OCaml'                        =>   3.00,
     'Odin'                         =>   2.00,
-    'ogl'                          =>   1.00,
-    'omnis 7'                      =>   2.00,
-    'oodl'                         =>   2.76,
-    'ops'                          =>   1.74,
-    'ops5'                         =>   1.38,
-    'oracle'                       =>   2.76,
+    'OpenSCAD'                     =>   1.00,
     'Oracle Reports'               =>   2.76,
     'Oracle Forms'                 =>   2.67,
     'Oracle Developer/2000'        =>   3.48,
-    'oscar'                        =>   0.75,
     'Other'                        =>   1.00,
-    'pacbase'                      =>   1.67,
-    'pace'                         =>   2.00,
-    'paradox/pal'                  =>   2.22,
+    'P4'                           =>   1.5 ,
     'Pascal'                       =>   0.88,
     'Patran Command Language'      =>   2.50,
-    'pc focus'                     =>   2.22,
-    'pdl millenium'                =>   3.81,
-    'pdp11 ade'                    =>   1.51,
-    'peoplesoft'                   =>   2.50,
     'Perl'                         =>   4.00,
-    'persistance object builder'   =>   3.81,
+    'PEG'                          =>   3.00,
+    'peg.js'                       =>   3.00,
+    'peggy'                        =>   3.00,
+    'Pest'                         =>   2.00,
+    'tspeg'                        =>   3.00,
     'Pig Latin'                    =>   1.00,
-    'pilot'                        =>   1.51,
     'PL/I'                         =>   1.38,
-    'pl/1'                         =>   1.38,
     'PL/M'                         =>   1.13,
-    'pl/s'                         =>   0.88,
+    'PlantUML'                     =>   2.00,
     'Oracle PL/SQL'                =>   2.58,
-    'pl/sql'                       =>   2.58,
-    'planit'                       =>   1.51,
-    'planner'                      =>   1.25,
-    'planperfect 1'                =>  11.43,
-    'plato'                        =>   1.51,
     'PO File'                      =>   1.50,
-    'polyforth'                    =>   1.25,
-    'pop'                          =>   1.38,
-    'poplog'                       =>   1.38,
-    'power basic'                  =>   1.63,
+    'Pony'                         =>   3.00,
     'PowerBuilder'                 =>   3.33,
-    'powerhouse'                   =>   5.71,
     'PowerShell'                   =>   3.00,
-    'ppl (plus)'                   =>   2.00,
     'problemoriented default'      =>   1.13,
-    'proc'                         =>   2.96,
-    'procedural default'           =>   0.75,
-    'professional pascal'          =>   0.88,
-    'program generator default'    =>   5.00,
-    'progress v4'                  =>   2.22,
     'ProGuard'                     =>   2.50,
-    'proiv'                        =>   1.38,
     'Prolog'                       =>   1.25,
-    'prose'                        =>   0.75,
-    'proteus'                      =>   0.75,
+    'Properties'                   =>   1.36,
     'Protocol Buffers'             =>   2.00,
     'Pug'                          =>   2.00,
     'Puppet'                       =>   2.00,
     'PureScript'                   =>   2.00,
-    'qbasic'                       =>   1.38,
-    'qbe'                          =>   6.15,
-    'qmf'                          =>   5.33,
     'QML'                          =>   1.25,
     'Qt'                           =>   2.00,
     'Qt Linguist'                  =>   1.00,
     'Qt Project'                   =>   1.00,
-    'qnial'                        =>   1.63,
-    'quattro'                      =>  13.33,
-    'quattro pro'                  =>  13.33,
-    'query default'                =>   6.15,
-    'quick basic 1'                =>   1.25,
-    'quick basic 2'                =>   1.31,
-    'quick basic 3'                =>   1.38,
-    'quick c'                      =>   0.63,
-    'quickbuild'                   =>   2.86,
-    'quiz'                         =>   5.33,
     'R'                            =>   3.00,
     'Rmd'                          =>   3.00,
     'Racket'                       =>   1.50,
@@ -10476,32 +10867,16 @@ sub set_constants {                          # {{{1
     'rally'                        =>   2.00,
     'ramis ii'                     =>   2.00,
     'RAML'                         =>   0.90,
-    'rapidgen'                     =>   2.86,
-    'ratfor'                       =>   0.88,
-    'rdb'                          =>   2.00,
-    'realia'                       =>   1.74,
-    'realizer 1.0'                 =>   2.00,
-    'realizer 2.0'                 =>   2.22,
     'ReasonML'                     =>   2.50,
     'ReScript'                     =>   2.50,
-    'relate/3000'                  =>   2.00,
     'reStructuredText'             =>   1.50,
-    'reuse default'                =>  16.00,
     'Razor'                        =>   2.00,
     'Rexx'                         =>   1.19,
     'Ring'                         =>   4.20,
-    'rm basic'                     =>   0.88,
-    'rm cobol'                     =>   0.75,
-    'rm fortran'                   =>   0.75,
     'RobotFramework'               =>   2.50,
-    'rpg i'                        =>   1.00,
-    'rpg ii'                       =>   1.63,
-    'rpg iii'                      =>   1.63,
-    'rtexpert 1.4'                 =>   1.38,
+    'Circom'                       =>   1.00,
+    'Cairo'                        =>   1.00,
     'Rust'                         =>   1.00,
-    'sabretalk'                    =>   0.90,
-    'sail'                         =>   0.75,
-    'sapiens'                      =>   5.00,
     'sas'                          =>   1.95,
     'Scala'                        =>   4.10,
     'Scheme'                       =>   1.51,
@@ -10513,155 +10888,82 @@ sub set_constants {                          # {{{1
     'zsh'                          =>   3.81,
     'Fish Shell'                   =>   3.81,
     'C Shell'                      =>   3.81,
-    'siebel tools '                =>   6.15,
     'SaltStack'                    =>   2.00,
     'SAS'                          =>   1.5 ,
     'Sass'                         =>   1.5 ,
-    'simplan'                      =>   2.22,
-    'simscript'                    =>   1.74,
-    'simula'                       =>   1.74,
-    'simula 67'                    =>   1.74,
-    'simulation default'           =>   1.74,
+    'SCSS'                         =>   1.5 ,
     'SKILL'                        =>   2.00,
     'SKILL++'                      =>   2.00,
     'slogan'                       =>   0.98,
     'Slice'                        =>   1.50,
     'Smalltalk'                    =>   4.00,
-    'smalltalk 286'                =>   3.81,
-    'smalltalk 80'                 =>   3.81,
-    'smalltalk/v'                  =>   3.81,
     'Smarty'                       =>   3.50,
-    'snap'                         =>   1.00,
-    'snobol24'                     =>   0.63,
-    'softscreen'                   =>   5.71,
     'Softbridge Basic'             =>   2.76,
-    'solo'                         =>   1.38,
     'SparForte'                    =>   3.80,
-    'speakeasy'                    =>   2.22,
-    'spinnaker ppl'                =>   2.22,
-    'splus'                        =>   2.50,
-    'spreadsheet default'          =>  13.33,
     'sps'                          =>   0.25,
     'spss'                         =>   2.50,
     'Specman e'                    =>   2.00,
     'SQL'                          =>   2.29,
-    'sqlwindows'                   =>   6.67,
     'Squirrel'                     =>   2.50,
-    'statistical default'          =>   2.50,
     'Standard ML'                  =>   3.00,
     'Stata'                        =>   3.00,
-    'strategem'                    =>   2.22,
-    'stress'                       =>   1.13,
-    'strongly typed default'       =>   0.88,
-    'style'                        =>   1.74,
     'Stylus'                       =>   1.48,
     'SugarSS'                      =>   2.50,
-    'superbase 1.3'                =>   2.22,
-    'surpass'                      =>  13.33,
     'Svelte'                       =>   2.00,
     'SVG'                          =>   1.00,
     'Swift'                        =>   2.50,
     'SWIG'                         =>   2.50,
-    'sybase'                       =>   2.00,
-    'symantec c++'                 =>   2.76,
-    'symbolang'                    =>   1.25,
-    'synchroworks'                 =>   4.44,
-    'synon/2e'                     =>   4.21,
-    'systemw'                      =>   2.22,
-    'tandem access language'       =>   0.88,
+    'TableGen'                     =>   2.00,
     'Tcl/Tk'                       =>   4.00,
+    'TEAL'                         =>   0.50,
     'Teamcenter def'               =>   1.00,
     'Teamcenter met'               =>   1.00,
     'Teamcenter mth'               =>   1.00,
     'TeX'                          =>   1.50,
-    'telon'                        =>   5.00,
-    'tessaract'                    =>   2.00,
-    'the twin'                     =>  13.33,
+    'Text'                         =>   0.50,
     'Thrift'                       =>   2.50,
-    'tiief'                        =>   5.71,
     'Titanium Style Sheet'         =>   2.00,
     'TOML'                         =>   2.76,
-    'transform'                    =>   5.33,
-    'translisp plus'               =>   1.43,
-    'treet'                        =>   1.25,
-    'treetran'                     =>   1.25,
-    'trs80 basic'                  =>   0.63,
-    'true basic'                   =>   1.25,
-    'turing'                       =>   1.00,
-    'tutor'                        =>   1.51,
-    'twaice'                       =>   1.63,
     'Twig'                         =>   2.00,
     'TNSDL'                        =>   2.00,
     'TTCN'                         =>   2.00,
     'TITAN Project File Information' =>   1.90,
     'TypeScript'                   =>   2.00,
-    'ucsd pascal'                  =>   0.88,
-    'ufo/ims'                      =>   2.22,
-    'uhelp'                        =>   2.50,
-    'uniface'                      =>   5.00,
+    'Umka'                         =>   2.00,
     'Unity-Prefab'                 =>   2.50,
     'Vala'                         =>   1.50,
     'Vala Header'                  =>   1.40,
-    'vax acms'                     =>   1.38,
-    'vax ade'                      =>   2.00,
-    'vbscript'                     =>   2.35,
-    'vectran'                      =>   0.75,
     'Verilog-SystemVerilog'        =>   1.51,
     'VHDL'                         =>   4.21,
     'vim script'                   =>   3.00,
-    'visible c'                    =>   1.63,
-    'visible cobol'                =>   2.00,
-    'visicalc 1'                   =>   8.89,
-    'visual 4.0'                   =>   2.76,
-    'visual basic'                 =>   1.90,
     'Visual Basic'                 =>   2.76,
     'VB for Applications'          =>   2.76,
     'Visual Basic .NET'            =>   2.76,
     'Visual Basic Script'          =>   2.76,
-    'visual c++'                   =>   2.35,
-    'visual cobol'                 =>   4.00,
     'Visual Fox Pro'               =>   4.00, # Visual Fox Pro is not available in the language gearing ratios listed at Mayes Consulting web site
-    'visual objects'               =>   5.00,
-    'visualage'                    =>   3.81,
     'Visualforce Component'        =>   1.9 ,
     'Visualforce Page'             =>   1.9 ,
-    'visualgen'                    =>   4.44,
-    'VM'                           =>   2.00,
-    'vpf'                          =>   0.84,
     'Vuejs Component'              =>   2.00,
-    'vulcan'                       =>   1.25,
-    'vz programmer'                =>   2.22,
-    'warp x'                       =>   2.00,
-    'watcom c'                     =>   0.63,
-    'watcom c/386'                 =>   0.63,
-    'waterloo c'                   =>   0.63,
-    'waterloo pascal'              =>   0.88,
-    'watfiv'                       =>   0.94,
-    'watfor'                       =>   0.88,
-    'web scripts'                  =>   5.33,
     'Web Services Description'     =>   1.00,
     'WebAssembly'                  =>   0.45,
-    'whip'                         =>   0.88,
+    'WGSL'                         =>   2.50,
     'Windows Message File'         =>   1.00,
     'Windows Resource File'        =>   1.00,
     'Windows Module Definition'    =>   1.00,
     'WiX source'                   =>   1.90,
     'WiX include'                  =>   1.90,
     'WiX string localization'      =>   1.90,
-    'wizard'                       =>   2.86,
     'WXML'                         =>   1.90,
     'WXSS'                         =>   1.00,
     'xBase'                        =>   2.00,
     'xBase Header'                 =>   2.00,
     'xlisp'                        =>   1.25,
+    'X++'                          =>   1.51, # This is a guess. Copied from C++, because the overhead for C++ headers might be equivalent to the overhead of structuring elements in XPO files
     'XAML'                         =>   1.90,
     'XQuery'                       =>   2.50,
     'yacc'                         =>   1.51,
     'yacc++'                       =>   1.51,
     'YAML'                         =>   0.90,
-    'zbasic'                       =>   0.88,
-    'zim'                          =>   4.21,
-    'zlisp'                        =>   1.25,
     'Expect'                       => 2.00,
     'Gencat NLS'                   => 1.50,
     'C/C++ Header'                 => 1.00,
@@ -10849,7 +11151,7 @@ sub matlab_or_objective_C {                  # {{{1
     #   BeginPackage
 
     ${$rs_language} = "";
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return;
@@ -10949,7 +11251,7 @@ sub Lisp_or_OpenCL {                         # {{{1
     print "-> Lisp_or_OpenCL\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -10981,7 +11283,7 @@ sub Lisp_or_Julia {                          # {{{1
     print "-> Lisp_or_Julia\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11013,7 +11315,7 @@ sub Perl_or_Prolog {                         # {{{1
     print "-> Perl_or_Prolog\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11070,7 +11372,7 @@ sub IDL_or_QtProject {                       # {{{1
     print "-> IDL_or_QtProject($file)\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11116,7 +11418,7 @@ sub Ant_or_XML {                             # {{{1
     print "-> Ant_or_XML($file)\n" if $opt_v > 2;
 
     my $lang = "XML";
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11154,7 +11456,7 @@ sub Maven_or_XML {                           # {{{1
     print "-> Maven_or_XML($file)\n" if $opt_v > 2;
 
     my $lang = "XML";
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11194,7 +11496,7 @@ sub pascal_or_puppet {                       # {{{1
     print "-> pascal_or_puppet\n" if $opt_v > 2;
 
     ${$rs_language} = "";
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return;
@@ -11227,6 +11529,8 @@ sub pascal_or_puppet {                       # {{{1
         ++$pascal_points if /writeln/;
 
         ++$puppet_points if /^\s*class\s+/ and not /class\s+operator\s+/;
+        ++$puppet_points if /^\s*function\s+[a-z][a-z0-9]+::[a-z][a-z0-9]+\s*/;
+        ++$puppet_points if /^\s*type\s+[A-Z]\w+::[A-Z]\w+\s+/;
         ++$puppet_points if /^\s*case\s+/;
         ++$puppet_points if /^\s*package\s+/;
         ++$puppet_points if /^\s*file\s+/;
@@ -11260,7 +11564,7 @@ sub Forth_or_Fortran {                       # {{{1
     print "-> Forth_or_Fortran\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11290,7 +11594,7 @@ sub Forth_or_Fsharp {                        # {{{1
     print "-> Forth_or_Fsharp\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11320,7 +11624,7 @@ sub Verilog_or_Coq {                         # {{{1
     print "-> Verilog_or_Coq\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11355,7 +11659,7 @@ sub TypeScript_or_QtLinguist {               # {{{1
     print "-> TypeScript_or_QtLinguist\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11386,7 +11690,7 @@ sub Qt_or_Glade {                            # {{{1
     print "-> Qt_or_Glade\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11418,7 +11722,7 @@ sub Csharp_or_Smalltalk {                    # {{{1
     print "-> Csharp_or_Smalltalk($file)\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11461,7 +11765,7 @@ sub Visual_Basic_or_TeX_or_Apex {            # {{{1
     print "-> Visual_Basic_or_TeX_or_Apex($file)\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11510,7 +11814,7 @@ sub Scheme_or_SaltStack {                    # {{{1
     print "-> Scheme_or_SaltStack($file)\n" if $opt_v > 2;
 
     my $lang = undef;
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
         return $lang;
@@ -11597,12 +11901,12 @@ sub test_alg_diff {                          # {{{1
     my ($file_1 ,
         $file_2 )
        = @_;
-    my $fh_1 = new IO::File $file_1, "r";
+    my $fh_1 = open_file('<', $file_1, 1);
     die "Unable to read $file_1:  $!\n" unless defined $fh_1;
     chomp(my @lines_1 = <$fh_1>);
     $fh_1->close;
 
-    my $fh_2 = new IO::File $file_2, "r";
+    my $fh_2 = open_file('<', $file_2, 1);
     die "Unable to read $file_2:  $!\n" unless defined $fh_2;
     chomp(my @lines_2 = <$fh_2>);
     $fh_2->close;
@@ -12135,10 +12439,9 @@ sub get_leading_dirs {                       # {{{1
 ########++$candidate_leading_dir_R{$leading_dir_R};
     }
 #use Data::Dumper::Simple;
-    if ($ON_WINDOWS) {
-        $L_drop =~ s{\\}{/}g;
-        $R_drop =~ s{\\}{/}g;
-    }
+    # at this point path separator on Windows is already /
+    $L_drop =~ s{//}{/}g;
+    $R_drop =~ s{//}{/}g;
 #print "L_drop=$L_drop\n";
 #print "R_drop=$R_drop\n";
     return $L_drop, $R_drop, 1;
@@ -12328,10 +12631,10 @@ sub unicode_file {                           # {{{1
     my $file = shift @_;
 
     print "-> unicode_file($file)\n" if $opt_v > 2;
-    return 0 if (-s $file > 2_000_000);
+    return 0 if (get_size($file) > 2_000_000);
     # don't bother trying to test binary files bigger than 2 MB
 
-    my $IN = new IO::File $file, "r";
+    my $IN = open_file('<', $file, 1);
     if (!defined $IN) {
         warn "Unable to read $file; ignoring.\n";
         return 0;
@@ -12418,6 +12721,7 @@ sub unicode_to_ascii {                       # {{{1
         if (ord($L) == 9 or ord($L) == 10 or ord($L) == 13) {
             my $companion;
             if ($points_1) {
+                last if $i+1 >= $length;
                 $companion = $unicode[$i+1];
             } else {
                 $companion = $unicode[$i-1];
@@ -13031,7 +13335,7 @@ sub combine_diffs {                          # {{{1
     my %HoH   = ();
 
     foreach my $file (@{$ra_files}) {
-        my $IN = new IO::File $file, "r";
+        my $IN = open_file('<', $file, 1);
         if (!defined $IN) {
             warn "Unable to read $file; ignoring.\n";
             next;
@@ -13109,7 +13413,7 @@ sub combine_csv_diffs {                      # {{{1
 
     my %sum = ();  # sum{ language } = array of 17 values
     foreach my $file (@{$ra_files}) {
-        my $IN = new IO::File $file, "r";
+        my $IN = open_file('<', $file, 1);
         if (!defined $IN) {
             warn "Unable to read $file; ignoring.\n";
             next;
@@ -13248,6 +13552,7 @@ sub load_from_config_file {                  # {{{1
                                                  $rs_counted             ,
                                                  $rs_include_ext         ,
                                                  $rs_include_lang        ,
+                                                 $rs_include_content     ,
                                                  $rs_exclude_content     ,
                                                  $rs_exclude_lang        ,
                                                  $rs_exclude_dir         ,
@@ -13256,6 +13561,7 @@ sub load_from_config_file {                  # {{{1
                                                  $rs_extract_with        ,
                                                  $rs_found               ,
                                                  $rs_count_diff          ,
+                                                 $rs_diff_list_files     ,
                                                  $rs_diff                ,
                                                  $rs_diff_alignment      ,
                                                  $rs_diff_timeout        ,
@@ -13335,10 +13641,10 @@ sub load_from_config_file {                  # {{{1
         #    $ENV{'APPDATA'} . 'cloc'
 
     print "-> load_from_config_file($config_file)\n" if $opt_v and $opt_v > 2;
-    if (!-f $config_file) {
+    if (!is_file($config_file)) {
         print "<- load_from_config_file() (no such file: $config_file)\n" if $opt_v and $opt_v > 2;
         return;
-    } elsif (!-r $config_file) {
+    } elsif (!can_read($config_file)) {
         print "<- load_from_config_file() (unable to read $config_file)\n" if $opt_v and $opt_v > 2;
         return;
     }
@@ -13357,6 +13663,7 @@ sub load_from_config_file {                  # {{{1
         } elsif (!defined ${$rs_counted}             and /^counted(=|\s+)(.*?)$/)                             { ${$rs_counted}            = $2;
         } elsif (!defined ${$rs_include_ext}         and /^(?:include_ext|include-ext)(=|\s+)(.*?)$/)         { ${$rs_include_ext}        = $2;
         } elsif (!defined ${$rs_include_lang}        and /^(?:include_lang|include-lang)(=|\s+)(.*?)$/)       { ${$rs_include_lang}       = $2;
+        } elsif (!defined ${$rs_include_content}     and /^(?:include_content|include-content)(=|\s+)(.*?)$/) { ${$rs_include_content}    = $2;
         } elsif (!defined ${$rs_exclude_content}     and /^(?:exclude_content|exclude-content)(=|\s+)(.*?)$/) { ${$rs_exclude_content}    = $2;
         } elsif (!defined ${$rs_exclude_lang}        and /^(?:exclude_lang|exclude-lang)(=|\s+)(.*?)$/)       { ${$rs_exclude_lang}       = $2;
         } elsif (!defined ${$rs_exclude_dir}         and /^(?:exclude_dir|exclude-dir)(=|\s+)(.*?)$/)         { ${$rs_exclude_dir}        = $2;
@@ -13364,6 +13671,7 @@ sub load_from_config_file {                  # {{{1
         } elsif (!defined ${$rs_extract_with}        and /^(?:extract_with|extract-with)(=|\s+)(.*?)$/)       { ${$rs_extract_with}       = $2;
         } elsif (!defined ${$rs_found}               and /^found(=|\s+)(.*?)$/)                               { ${$rs_found}              = $2;
         } elsif (!defined ${$rs_count_diff}          and /^(count_and_diff|count-and-diff)/)                  { ${$rs_count_diff}         = 1;
+        } elsif (!defined ${$rs_diff_list_files}     and /^(diff_list_files|diff-list-files)/)                { ${$rs_diff_list_files}    = 1;
         } elsif (!defined ${$rs_diff}                and /^diff/)                                             { ${$rs_diff}               = 1;
         } elsif (!defined ${$rs_diff_alignment}      and /^(?:diff-alignment|diff_alignment)(=|\s+)(.*?)$/)   { ${$rs_diff_alignment}     = $2;
         } elsif (!defined ${$rs_diff_timeout}        and /^(?:diff-timeout|diff_timeout)(=|\s+)i/)            { ${$rs_diff_timeout}       = $1;
@@ -13431,7 +13739,7 @@ sub load_from_config_file {                  # {{{1
         } elsif (!defined ${$rs_force_git}           and /^git/)                                              { ${$rs_force_git}          = 1;
         } elsif (!defined ${$rs_exclude_list_file}   and /^(?:exclude_list_file|exclude-list-file)(=|\s+)(.*?)$/)
                                                                    { ${$rs_exclude_list_file}  = $2;
-        } elsif (!defined ${$rs_v} and /(verbose|v)((=|\s+)(\d+))?/) {
+        } elsif (!defined ${$rs_v} and /^(verbose|v)((=|\s+)(\d+))?/) {
             if (!defined $4) { ${$rs_v} =  0; }
             else             { ${$rs_v} = $4; }
         } elsif (!$has_script_lang and /^(?:script_lang|script-lang)(=|\s+)(.*?)$/)         {
@@ -13493,15 +13801,116 @@ sub check_alternate_config_files {           # {{{1
                       $diff_list_file ) {
         next unless defined $file;
         my $dir = dirname $file;
-        next unless -r $dir and -d $dir;
+        next unless can_read($dir) and is_dir($dir);
         my $bn = basename $config_file;
-        if (-r "$dir/$bn") {
+        if (can_read("$dir/$bn")) {
             $found_it = "$dir/$bn";
             print "Using configuration file $found_it\n" if $opt_v;
             last;
         }
     }
     return $found_it;
+}
+# 1}}}
+sub write_null_results {                     # {{{
+    my ($json, $xml, $report_file,) = @_;
+    print "-> write_null_results\n" if $opt_v > 2;
+    if ((defined $json) or (defined $xml)) {
+        my $line = "";
+        if (defined $json) {
+            $line = "{}";
+        } else {
+            $line = '<?xml version="1.0" encoding="UTF-8"?><results/>';
+        }
+        if (defined $report_file) {
+            open OUT, ">$report_file" or die "Cannot write to $report_file $!\n";
+            print OUT "$line\n";
+            close OUT;
+        } else {
+            print "$line\n";
+        }
+    }
+    print "<- write_null_results\n" if $opt_v > 2;
+} # }}}
+# code from Text::Glob {{{1
+sub glob_to_regex {
+    my $glob = shift;
+    my $regex = glob_to_regex_string($glob);
+    return qr/^$regex$/;
+}
+
+sub glob_to_regex_string
+{
+    my $glob = shift;
+    my $strict_leading_dot = 1;
+    my $strict_wildcard_slash = 1;
+
+    my $seperator = "/"; # unless defined $seperator;
+    $seperator = quotemeta($seperator);
+
+    my ($regex, $in_curlies, $escaping);
+    local $_;
+    my $first_byte = 1;
+    for ($glob =~ m/(.)/gs) {
+        if ($first_byte) {
+            if ($strict_leading_dot) {
+                $regex .= '(?=[^\.])' unless $_ eq '.';
+            }
+            $first_byte = 0;
+        }
+        if ($_ eq '/') {
+            $first_byte = 1;
+        }
+        if ($_ eq '.' || $_ eq '(' || $_ eq ')' || $_ eq '|' ||
+            $_ eq '+' || $_ eq '^' || $_ eq '$' || $_ eq '@' || $_ eq '%' ) {
+            $regex .= "\\$_";
+        }
+        elsif ($_ eq '*') {
+            $regex .= $escaping ? "\\*" :
+              $strict_wildcard_slash ? "(?:(?!$seperator).)*" : ".*";
+        }
+        elsif ($_ eq '?') {
+            $regex .= $escaping ? "\\?" :
+              $strict_wildcard_slash ? "(?!$seperator)." : ".";
+        }
+        elsif ($_ eq '{') {
+            $regex .= $escaping ? "\\{" : "(";
+            ++$in_curlies unless $escaping;
+        }
+        elsif ($_ eq '}' && $in_curlies) {
+            $regex .= $escaping ? "}" : ")";
+            --$in_curlies unless $escaping;
+        }
+        elsif ($_ eq ',' && $in_curlies) {
+            $regex .= $escaping ? "," : "|";
+        }
+        elsif ($_ eq "\\") {
+            if ($escaping) {
+                $regex .= "\\\\";
+                $escaping = 0;
+            }
+            else {
+                $escaping = 1;
+            }
+            next;
+        }
+        else {
+            $regex .= $_;
+            $escaping = 0;
+        }
+        $escaping = 0;
+    }
+    #print "# $glob $regex\n" if debug;
+
+    return $regex;
+}
+
+sub match_glob {
+    #print "# ", join(', ', map { "'$_'" } @_), "\n" if debug;
+    my $glob = shift;
+    my $regex = glob_to_regex $glob;
+    local $_;
+    grep { $_ =~ $regex } @_;
 }
 # 1}}}
 # really_is_pascal, really_is_incpascal, really_is_php from SLOCCount
@@ -13568,9 +13977,9 @@ sub really_is_pascal {                       # {{{1
  my $found_terminating_end = 0;
  my $has_begin = 0;
 
- open(PASCAL_FILE, "<$filename") ||
-      die "Can't open $filename to determine if it's pascal.\n";
- while(<PASCAL_FILE>) {
+ my $PASCAL_FILE = open_file('<', $filename, 0);
+ die "Can't open $filename to determine if it's pascal.\n" if !defined $PASCAL_FILE;
+ while(<$PASCAL_FILE>) {
    s/\{.*?\}//g;  # Ignore {...} comments on this line; imperfect, but effective.
    s/\(\*.*?\*\)//g;  # Ignore (*...*) comments on this line; imperfect, but effective.
    if (m/\bprogram\s+[A-Za-z]/i)  {$has_program=1;}
@@ -13591,7 +14000,7 @@ sub really_is_pascal {                       # {{{1
    if (m/end\.\s*$/i) {$found_terminating_end = 1;}
 #   elsif (m/\S/) {$found_terminating_end = 0;}
  }
- close(PASCAL_FILE);
+ close($PASCAL_FILE);
 
  # Okay, we've examined the entire file looking for clues;
  # let's use those clues to determine if it's really Pascal:
@@ -13623,9 +14032,9 @@ sub really_is_incpascal {                    # {{{1
  my $is_pascal = 0;      # Value to determine.
  my $found_begin = 0;
 
- open(PASCAL_FILE, "<$filename") ||
-      die "Can't open $filename to determine if it's pascal.\n";
- while(<PASCAL_FILE>) {
+ my $PASCAL_FILE = open_file('<', $filename, 0);
+ die "Can't open $filename to determine if it's pascal.\n" if !defined $PASCAL_FILE;
+ while(<$PASCAL_FILE>) {
    s/\{.*?\}//g;  # Ignore {...} comments on this line; imperfect, but effective.
    s/\(\*.*?\*\)//g;  # Ignore (*...*) comments on this line; imperfect, but effective.
    if (m/\bprogram\s+[A-Za-z]/i)  {$is_pascal=1;}
@@ -13643,7 +14052,7 @@ sub really_is_incpascal {                    # {{{1
    }
  }
 
- close(PASCAL_FILE);
+ close($PASCAL_FILE);
  return $is_pascal;
 } # 1}}}
 sub really_is_php {                          # {{{1
@@ -13661,9 +14070,9 @@ sub really_is_php {                          # {{{1
  # Return cached result, if available:
  if ($php_files{$filename}) { return $php_files{$filename};}
 
- open(PHP_FILE, "<$filename") ||
-      die "Can't open $filename to determine if it's php.\n";
- while(<PHP_FILE>) {
+ my $PHP_FILE = open_file('<', $filename, 0);
+ die "Can't open $filename to determine if it's php.\n" if !defined $PHP_FILE;
+ while(<$PHP_FILE>) {
    if (m/\<\?/)                           { $normal_surround |= 1; }
    if (m/\?\>/ && ($normal_surround & 1)) { $normal_surround |= 2; }
    if (m/\<script.*language="?php"?/i)    { $script_surround |= 1; }
@@ -13671,7 +14080,7 @@ sub really_is_php {                          # {{{1
    if (m/\<\%/)                           { $asp_surround |= 1; }
    if (m/\%\>/ && ($asp_surround & 1)) { $asp_surround |= 2; }
  }
- close(PHP_FILE);
+ close($PHP_FILE);
 
  if ( ($normal_surround == 3) || ($script_surround == 3) ||
       ($asp_surround == 3)) {
@@ -13966,7 +14375,7 @@ Regexp::Common - Provide commonly requested regular expressions
 
 =head1 SYNOPSIS
 
- # STANDARD USAGE 
+ # STANDARD USAGE
 
  use Regexp::Common;
 
@@ -14050,12 +14459,12 @@ L<"Subroutine-based interface">.
 
 To access a particular pattern, C<%RE> is treated as a hierarchical hash of
 hashes (of hashes...), with each successive key being an identifier. For
-example, to access the pattern that matches real numbers, you 
+example, to access the pattern that matches real numbers, you
 specify:
 
         $RE{num}{real}
-        
-and to access the pattern that matches integers: 
+
+and to access the pattern that matches integers:
 
         $RE{num}{int}
 
@@ -14133,7 +14542,7 @@ new patterns with "optional" capturing brackets that respond to C<-keep>.
 Some patterns or subpatterns only match lowercase or uppercase letters.
 If one wants the do case insensitive matching, one option is to use
 the C</i> regexp modifier, or the special sequence C<(?i)>. But if the
-functional interface is used, one does not have this option. The 
+functional interface is used, one does not have this option. The
 C<-i> switch solves this problem; by using it, the pattern will do
 case insensitive matching.
 
@@ -14168,7 +14577,7 @@ Regexp::Common allows you do write this:
         $changed = $RE{some}{pattern}->subs($original=>$replacement);
 
 Apart from reducing precedence-angst, this approach has the added
-advantages that the substitution behaviour can be optimized from the 
+advantages that the substitution behaviour can be optimized from the
 regular expression, and the replacement string can be provided by
 default (see L<"Adding new regular expressions">).
 
@@ -14241,7 +14650,7 @@ whose pattern names have first keys I<key1> ... I<keyn>.
 =head2 Adding new regular expressions
 
 You can add your own regular expressions to the C<%RE> hash at run-time,
-using the exportable C<pattern> subroutine. It expects a hash-like list of 
+using the exportable C<pattern> subroutine. It expects a hash-like list of
 key/value pairs that specify the behaviour of the pattern. The various
 possible argument pairs are:
 
@@ -14287,10 +14696,10 @@ or a reference to a subroutine that will be called to create the pattern:
                             },
                 ;
 
-If the subroutine version is used, the subroutine will be called with 
+If the subroutine version is used, the subroutine will be called with
 three arguments: a reference to the pattern object itself, a reference
 to a hash containing the flags and their values,
-and a reference to an array containing the non-flag keys. 
+and a reference to an array containing the non-flag keys.
 
 Whatever the subroutine returns is stringified as the pattern.
 
@@ -14442,7 +14851,7 @@ Provides regexes for zip codes.
 
 Future releases of the module will also provide patterns for the following:
 
-        * email addresses 
+        * email addresses
         * HTML/XML tags
         * more numerical matchers,
         * mail headers (including multiline ones),
@@ -14467,7 +14876,7 @@ tests will be especially welcome.
 The subroutine-based interface didn't recognize the requested subroutine.
 Often caused by a spelling mistake or an incompletely specified name.
 
-        
+
 =item C<Can't create unknown regex: $RE{...}>
 
 Regexp::Common doesn't have a generator for the requested pattern.
@@ -14540,8 +14949,8 @@ that is that old. You might consider upgrading your perl.
 
 =item *
 
-The various patterns are not anchored. That is, a pattern like 
-C<< $RE {num} {int} >> will match against "abc4def", because a 
+The various patterns are not anchored. That is, a pattern like
+C<< $RE {num} {int} >> will match against "abc4def", because a
 substring of the subject matches. This is by design, and not a
 bug. If you want the pattern to be anchored, use something like:
 
@@ -14613,7 +15022,7 @@ my @generic = (
      from_to   => [['<?_c', '_c?>']],
     },
 
-    {languages => [qw /C++/, 'C#', qw /Cg ECMAScript FPL Java JavaScript/],
+    {languages => [qw /C++/, 'C#', 'X++', qw /Cg ECMAScript FPL Java JavaScript/],
      to_eol    => ['//'],
      from_to   => [[qw {/* */}]]},
 
@@ -14647,7 +15056,7 @@ my @generic = (
 
     {languages => [qw /Oberon/],
      from_to   => [[qw /(* *)/]]},
-     
+
     {languages => [[qw /Pascal Delphi/], [qw /Pascal Free/], [qw /Pascal GPC/]],
      to_eol    => ['//'],
      from_to   => [[qw !{ }!], [qw !(* *)!]]},
@@ -14791,9 +15200,9 @@ foreach my $group (@generic) {
                 ;
     }
 }
-                
 
-    
+
+
 #
 # Other languages.
 #
@@ -15018,15 +15427,15 @@ L<http://www.catseye.mb.ca/esoteric/b-juliet/index.html>.
 The esotoric language I<Befunge-98> uses comments that start and end
 with a C<;>. See L<http://www.catseye.mb.ca/esoteric/befunge/98/spec98.html>.
 
-=item BML                 
+=item BML
 
 I<BML>, or I<Better Markup Language> is an HTML templating language that
 uses comments starting with C<< <?c_ >>, and ending with C<< c_?> >>.
-See L<http://www.livejournal.com/doc/server/bml.index.html>.               
+See L<http://www.livejournal.com/doc/server/bml.index.html>.
 
 =item Brainfuck
 
-The minimal language I<Brainfuck> uses only eight characters, 
+The minimal language I<Brainfuck> uses only eight characters,
 C<E<lt>>, C<E<gt>>, C<[>, C<]>, C<+>, C<->, C<.> and C<,>.
 Any other characters are considered comments. With C<{-keep}>,
 C<$1> is set to the entire comment.
@@ -15296,7 +15705,7 @@ of the line. See also L<http://www.lua.org/manual/manual.html>.
 =item M, MUMPS
 
 In C<M> (aka C<MUMPS>), comments start with a semi-colon, and last
-till the end of a line. The language specification requires the 
+till the end of a line. The language specification requires the
 semi-colon to be preceded by one or more I<linestart character>s.
 Those characters default to a space, but that's configurable. This
 requirement, of preceding the comment with linestart characters is
@@ -15351,7 +15760,7 @@ pattern for comments of several implementations.
 
 =item C<$RE{comment}{Pascal}>
 
-This is the pattern that recognizes comments according to the Pascal ISO 
+This is the pattern that recognizes comments according to the Pascal ISO
 standard. This standard says that comments start with either C<{>, or
 C<(*>, and end with C<}> or C<*)>. This means that C<{*)> and C<(*}>
 are considered to be comments. Many Pascal applications don't allow this.
@@ -15370,12 +15779,12 @@ The I<Delphi Pascal>, I<Free Pascal> and the I<Gnu Pascal Compiler>
 implementations of Pascal all have comments that either start with
 C<//> and last till the end of the line, are delimited with C<{>
 and C<}> or are delimited with C<(*> and C<*)>. Patterns for those
-comments are given by C<$RE{comment}{Pascal}{Delphi}>, 
+comments are given by C<$RE{comment}{Pascal}{Delphi}>,
 C<$RE{comment}{Pascal}{Free}> and C<$RE{comment}{Pascal}{GPC}>
 respectively. These patterns only set C<$1> when C<{-keep}> is used,
 which will then include the entire comment.
 
-See L<http://info.borland.com/techpubs/delphi5/oplg/>, 
+See L<http://info.borland.com/techpubs/delphi5/oplg/>,
 L<http://www.freepascal.org/docs-html/ref/ref.html> and
 L<http://www.gnu-pascal.de/gpc/>.
 
@@ -15394,7 +15803,7 @@ See L<http://docs.sun.com/db/doc/802-5762>.
 =item PEARL
 
 Comments in I<PEARL> start with a C<!> and last till the end of the
-line, or start with C</*> and end with C<*/>. With C<{-keep}>, 
+line, or start with C</*> and end with C<*/>. With C<{-keep}>,
 C<$1> will be set to the entire comment.
 
 =item PHP
@@ -15405,7 +15814,7 @@ C<$1> will be set to the entire comment.
 
 =item PL/B
 
-In I<PL/B>, comments start with either C<.> or C<;>, and end with the 
+In I<PL/B>, comments start with either C<.> or C<;>, and end with the
 next newline. See L<http://www.mmcctech.com/pl-b/plb-0010.htm>.
 
 =item PL/I
@@ -15476,7 +15885,7 @@ a C<;>. See L<http://www.catseye.mb.ca/esoteric/shelta/index.html>.
 The I<SLIDE> language has two froms of comments. First there is the
 line comment, which starts with a C<#> and includes the rest of the
 line (just like Perl). Second, there is the multiline, nested comment,
-which are delimited by C<(*> and C<*)>. Under C{-keep}>, only 
+which are delimited by C<(*> and C<*)>. Under C{-keep}>, only
 C<$1> is set, and is set to the entire comment. See
 L<http://www.cs.berkeley.edu/~ug/slide/docs/slide/spec/spec_frame_intro.shtml>.
 
@@ -15502,11 +15911,11 @@ C<">. Double quotes can appear inside comments by doubling them.
 =item SQL
 
 Standard I<SQL> uses comments starting with two or more dashes, and
-ending at the end of the line. 
+ending at the end of the line.
 
 I<MySQL> does not follow the standard. Instead, it allows comments
 that start with a C<#> or C<-- > (that's two dashes and a space)
-ending with the following newline, and comments starting with 
+ending with the following newline, and comments starting with
 C</*>, and ending with the next C<;> or C<*/> that isn't inside
 single or double quotes. A pattern for this is returned by
 C<$RE{comment}{SQL}{MySQL}>. With C<{-keep}>, only C<$1> will
@@ -15547,7 +15956,7 @@ end of the line.
 
 =item ZZT-OOP
 
-The in-game language I<ZZT-OOP> uses comments that start with a C<'> 
+The in-game language I<ZZT-OOP> uses comments that start with a C<'>
 character, and end at the following newline. See
 L<http://dave2.rocketjump.org/rad/zzthelp/lang.html>.
 
@@ -16029,7 +16438,7 @@ a string with symmetric delimiters, you can specify the closing delimiter(s)
 with C<-cdelim => I<S>>. Each character in I<S> is matched with the
 corresponding character supplied with the C<-delim> option. If the C<-cdelim>
 option has less characters than the C<-delim> option, the last character
-is repeated as often as necessary. If the C<-cdelim> option has more 
+is repeated as often as necessary. If the C<-cdelim> option has more
 characters than the C<-delim> option, the extra characters are ignored.
 
 If C<-esc => I<S>> is specified, each character in the sequence I<S> is
@@ -16088,7 +16497,7 @@ In a future update, pairs may be added (or deleted).
 
 This pattern requires perl 5.14.0 or higher.
 
-For a full list of bracket pairs, inspect the output of 
+For a full list of bracket pairs, inspect the output of
 C<< Regexp::Common::delimited::bracket_pair () >>, which returns
 a list of two element arrays, each holding the Unicode names of
 matching pair of delimiters.
@@ -16171,7 +16580,7 @@ EOD
     mkdir $Regexp_Common_dir;
 
     foreach my $module_file (keys %Regexp_Common_Contents) {
-        my $OUT = new IO::File "$dir/Regexp/${module_file}.pm", "w";
+        my $OUT = open_file('>', "$dir/Regexp/${module_file}.pm", 1);
         if (defined $OUT) {
             print $OUT $Regexp_Common_Contents{$module_file};
             $OUT->close;
@@ -17037,7 +17446,7 @@ EOAlgDiff
     mkdir $Algorithm_dir     ;
     mkdir $Algorithm_Diff_dir;
 
-    my $OUT = new IO::File "$dir/Algorithm/Diff.pm", "w";
+    my $OUT = open_file('>', "$dir/Algorithm/Diff.pm", 1);
     if (defined $OUT) {
         print $OUT $Algorithm_Diff_Contents;
         $OUT->close;

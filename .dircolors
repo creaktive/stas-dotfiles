@@ -117,6 +117,7 @@ TERM xterm-256color-italic
 TERM xterm-88color
 TERM xterm-color
 TERM xterm-debian
+TERM xterm-kitty
 TERM xterm-termite
 
 # EIGHTBIT, followed by '1' for on, '0' for off. (8-bit output)
@@ -289,7 +290,6 @@ EXEC 01;31  # Unix
 .mng 33
 .pbm 33
 .pcx 33
-.pdf 33
 .pgm 33
 .png 33
 .PNG 33
@@ -310,6 +310,8 @@ EXEC 01;31  # Unix
 .yuv 33
 .nef 33 # Nikon RAW format
 .NEF 33
+.heic 33
+.HEIC 33
 
 # Audio
 .aac 33
@@ -378,6 +380,7 @@ EXEC 01;31  # Unix
 .otp 31
 .fla 31
 .psd 31
+.pdf 31
 
 # Archives, compressed
 .7z   1;35
@@ -474,7 +477,6 @@ EXEC 01;31  # Unix
 
 # The brightmagenta (Solarized: purple) color is free for you to use for your
 # custom file type
-.gpg 34
 .gpg 34
 .pgp 34
 .asc 34
