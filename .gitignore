@@ -20,6 +20,7 @@
 .perlbrew/
 .pulse/
 .ssh/
+.terminfo/
 .tor/
 .vscode/
 .zsh_sessions/
@@ -28,10 +29,11 @@
 @BETA@/
 @OMEGA@/
 Applications/
+Calibre Library/
 Desktop/
 Documents/
 Downloads/
-Dropbox/
+Dropbox
 Library/
 Movies/
 Music/
@@ -47,6 +49,8 @@ perl5/
 .bash_logout
 .bashrc
 .depac.env
+.fzf.bash
+.fzf.zsh
 .gitlab-api-v4-config
 .lesshst
 .mysql_history
