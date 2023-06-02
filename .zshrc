@@ -41,6 +41,7 @@ COMPLETION_WAITING_DOTS="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(
+    vi-mode
     ag
     cpanm
     docker
@@ -50,7 +51,6 @@ plugins=(
     git
     gnu-utils
     ssh-agent
-    sudo
 )
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
@@ -82,6 +82,7 @@ zstyle ':urlglobber' url-other-schema
 # bind UP and DOWN arrow keys
 zmodload zsh/terminfo
 bindkey '^ ' autosuggest-execute
+bindkey '^[.' insert-last-word
 
 alias tb='tmux save-buffer'
 alias ts='eval $( tmux show-env -s | grep "^SSH_" )'
