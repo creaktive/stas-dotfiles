@@ -83,7 +83,9 @@ zstyle ':urlglobber' url-other-schema
 zmodload zsh/terminfo
 bindkey '^ ' autosuggest-execute
 bindkey '^[.' insert-last-word
+bindkey -M vicmd 'V' edit-command-line
 
+alias t='tmux new -As0'
 alias tb='tmux save-buffer'
 alias ts='eval $( tmux show-env -s | grep "^SSH_" )'
 
