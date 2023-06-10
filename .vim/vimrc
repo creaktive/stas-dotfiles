@@ -252,3 +252,8 @@ nmap <leader>g :let @/="\\<<C-R><C-W>\\>"<CR>:set hls<CR>:silent Ggrep -w "<C-R>
 " OR ELSE just the 81st column of wide lines...
 " highlight ColorColumn ctermbg=magenta
 " call matchadd('ColorColumn', '\%81v', 100)
+
+set rtp+=/usr/local/opt/fzf
+set rtp+=/opt/homebrew/opt/fzf
+set rtp+=/usr/bin/fzf
+set rtp+=~/.fzf
