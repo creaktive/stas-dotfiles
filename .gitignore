@@ -23,6 +23,7 @@
 .terminfo/
 .tor/
 .vscode/
+.w3m/
 .zsh_sessions/
 
 @ALPHA@/
