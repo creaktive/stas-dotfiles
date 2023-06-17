@@ -83,6 +83,7 @@ zstyle ':urlglobber' url-other-schema
 zmodload zsh/terminfo
 bindkey '^ ' autosuggest-execute
 bindkey '^[.' insert-last-word
+bindkey '^[q' push-line
 bindkey -M vicmd 'V' edit-command-line
 
 alias t='tmux new -As0'
