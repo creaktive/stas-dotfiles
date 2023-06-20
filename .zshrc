@@ -84,6 +84,8 @@ zmodload zsh/terminfo
 bindkey '^ ' autosuggest-execute
 bindkey '^[.' insert-last-word
 bindkey '^[q' push-line
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
 bindkey -M vicmd 'V' edit-command-line
 
 alias t='tmux new -As0'
