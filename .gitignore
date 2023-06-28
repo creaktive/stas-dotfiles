@@ -24,6 +24,7 @@
 .tor/
 .vscode/
 .w3m/
+.wine/
 .zsh_sessions/
 
 @ALPHA@/
