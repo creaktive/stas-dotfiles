@@ -111,4 +111,5 @@ else
     alias dm='sudo dmesg -HP'
 fi
 
+alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..4}" /usr/share/dict/words'
 # zprof
