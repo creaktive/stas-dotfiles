@@ -43,6 +43,7 @@ COMPLETION_WAITING_DOTS="true"
 plugins=(
     vi-mode
     ag
+    aws
     cpanm
     docker
     fancy-ctrl-z
@@ -76,6 +77,7 @@ export LESS=' -SIR '
 export HISTSIZE=100000
 export SAVEHIST=100000
 export KEYTIMEOUT=1
+export JQ_COLORS="2;31:1;31:1;32:0;36:0;36:1;39:1;39"
 
 zstyle ':urlglobber' url-other-schema
 
