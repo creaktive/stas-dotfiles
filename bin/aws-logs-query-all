@@ -1,0 +1,109 @@
+#!/bin/bash
+AWS=aws
+DATE=$(which gdate || which date)
+JQ=jq
+
+$DATE -d tomorrow &>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Incompatible date command" &>2
+    exit 1
+fi
+
+startTime=yesterday
+endTime=now
+limit=10000
+groupNameFilter=lambda
+
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f|--from)
+            startTime="$2"
+            shift
+            shift
+            ;;
+        -t|--to)
+            endTime="$2"
+            shift
+            shift
+            ;;
+        -l|--limit)
+            limit="$2"
+            shift
+            shift
+            ;;
+        -g|--group)
+            groupNameFilter="$2"
+            shift
+            shift
+            ;;
+        -*|--*)
+            echo "Unknown option $1"
+            exit 1
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+query="${ARGS[@]:-fields @timestamp, @message, @log | filter @message like /ERROR/}"
+
+tmpDir=$(mktemp -d)
+if [ $? -ne 0 ]; then
+    echo "Can't create temporary dir" &>2
+    exit 1
+fi
+cd $tmpDir
+
+$AWS logs describe-log-groups \
+    | $JQ -r "
+        .logGroups[]
+        | select(
+            (.storedBytes > 0) and
+            (.logGroupName | test(\"$groupNameFilter\"))
+        )
+        | .logGroupName
+    " \
+    | shuf \
+    | split -l 50 - subgroup
+
+QUERIES=()
+for subgroup in subgroup*
+do
+    queryId=$(
+        $AWS logs start-query \
+            --limit $limit \
+            --start-time $($DATE -d "$startTime" +%s) \
+            --end-time $($DATE -d "$endTime" +%s) \
+            --log-group-names $(cat $subgroup) \
+            --query-string "$query" \
+            | $JQ -r .queryId
+    )
+    QUERIES+=($queryId)
+    rm $subgroup
+    echo $AWS logs get-query-results --query-id $queryId >&2
+done
+
+rmdir $tmpDir
+
+for queryId in "${QUERIES[@]}"
+do
+    while sleep 2; do
+        $AWS logs get-query-results \
+            --query-id $queryId \
+            | $JQ '
+                if .status == "Running" then
+                    .statistics
+                    | halt_error(1)
+                else
+                    .results[]
+                    | map({(.field | sub("\\W"; "_"; "g")): .value})
+                    | add
+                end
+            ' && break
+    done
+done
+
+exit 0
