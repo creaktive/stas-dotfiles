@@ -43,6 +43,9 @@ Pictures/
 Public/
 Splice/
 _BACKUP_
+
+bin/fx
+go/
 perl5/
 
 .ICEauthority
