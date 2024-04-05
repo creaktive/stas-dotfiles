@@ -111,6 +111,10 @@ if which starship &>/dev/null; then
     eval "$(starship init zsh)"
 fi
 
+if which sf &>/dev/null; then
+    eval $(sf autocomplete script zsh)
+fi
+
 if [ `uname` = "Darwin" ]; then
     alias dm='sudo dmesg'
 else
