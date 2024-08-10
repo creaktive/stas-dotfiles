@@ -42,7 +42,6 @@ COMPLETION_WAITING_DOTS="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(
     vi-mode
-    ag
     aws
     cpanm
     docker
