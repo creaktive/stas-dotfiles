@@ -3,3 +3,6 @@ disabled = true
 
 [nodejs]
 format = "via [⚡️ $version](bold green) "
+
+[time]
+disabled = false
