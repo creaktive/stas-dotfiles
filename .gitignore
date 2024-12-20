@@ -16,6 +16,7 @@
 .mc/
 .mozilla/
 .npm/
+.ollama/
 .parallel/
 .perlbrew/
 .pulse/
