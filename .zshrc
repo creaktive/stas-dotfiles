@@ -120,5 +120,7 @@ else
     alias dm='sudo dmesg -HP'
 fi
 
-alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..4}" /usr/share/dict/words'
+alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..5}" /usr/share/dict/words'
+alias bre='brew upgrade --greedy && brew cleanup && brew cleanup -s'
+alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
 # zprof
