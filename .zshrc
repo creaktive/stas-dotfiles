@@ -44,10 +44,8 @@ plugins=(
     vi-mode
     aws
     cpanm
-    docker
     fancy-ctrl-z
     fzf
-    gh
     git
     gnu-utils
     ssh-agent
