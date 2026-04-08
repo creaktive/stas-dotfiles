@@ -54,7 +54,11 @@ plugins=(
 )
 
 zstyle :omz:plugins:ssh-agent agent-forwarding on
+
+typeset -A ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 source $HOME/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#657b83"
 source $HOME/zsh-autosuggestions/zsh-autosuggestions.zsh
 
