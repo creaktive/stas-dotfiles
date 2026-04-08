@@ -13,10 +13,23 @@ startTime=yesterday
 endTime=now
 limit=10000
 groupNameFilter=lambda
+describe=
 
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -h|--help)
+            cat << HELP
+Usage: aws-logs-query-all [options...] <query>
+ -h, --help         This
+ -f, --from         Search from timestamp (default: yesterday)
+ -t, --to           Search to timestamp (default: now)
+ -l, --limit        Results limit (default: 10000)
+ -g, --group        Match group names to substring (default: lambda)
+ -d, --describe     Describe non-empty matching groups and exit
+HELP
+            exit
+            ;;
         -f|--from)
             startTime="$2"
             shift
@@ -37,6 +50,10 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        -d|--describe)
+            describe=1
+            shift
+            ;;
         -*|--*)
             echo "Unknown option $1"
             exit 1
@@ -48,7 +65,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-query="${ARGS[@]:-fields @timestamp, @message, @log | filter @message like /ERROR/}"
+query="${ARGS[@]:-fields @message | filter @message like /^\{/ | sort @timestamp asc}"
 
 tmpDir=$(mktemp -d)
 if [ $? -ne 0 ]; then
@@ -57,17 +74,27 @@ if [ $? -ne 0 ]; then
 fi
 cd $tmpDir
 
+groups='groups.json'
 $AWS logs describe-log-groups \
-    | $JQ -r "
+    | $JQ "
         .logGroups[]
         | select(
             (.storedBytes > 0) and
             (.logGroupName | test(\"$groupNameFilter\"))
         )
-        | .logGroupName
-    " \
+    " > $groups
+
+if [ -n "$describe" ]; then
+    $JQ < $groups
+    rm -rf $tmpDir
+    exit
+fi
+
+$JQ -r ".logGroupName" < $groups \
     | shuf \
     | split -l 50 - subgroup
+
+rm $groups
 
 QUERIES=()
 for subgroup in subgroup*
@@ -90,7 +117,7 @@ rmdir $tmpDir
 
 for queryId in "${QUERIES[@]}"
 do
-    while sleep 2; do
+    while true; do
         $AWS logs get-query-results \
             --query-id $queryId \
             | $JQ '
@@ -101,8 +128,11 @@ do
                     .results[]
                     | map({(.field | sub("\\W"; "_"; "g")): .value})
                     | add
+                    | ._message? | fromjson?
+                    | {timestamp} + .
                 end
             ' && break
+        sleep 1
     done
 done
 
