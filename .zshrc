@@ -20,10 +20,24 @@ ZSH_THEME="agnoster"
 # Comment this out to disable bi-weekly auto-update checks
 DISABLE_AUTO_UPDATE="true"
 
-export HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
-export HIST_FIND_NO_DUPS=1
-export HIST_IGNORE_DUPS=1
-setopt HIST_IGNORE_ALL_DUPS
+HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+HIST_FIND_NO_DUPS=1
+
+# Share history across all open terminal tabs
+setopt SHARE_HISTORY
+
+# Expire duplicate entries first when trimming history
+setopt HIST_EXPIRE_DUPS_FIRST
+
+# Don't record an entry if it's a duplicate of the previous one
+setopt HIST_IGNORE_DUPS
+# setopt HIST_IGNORE_ALL_DUPS
+
+# Do not write duplicate entries in the history file
+setopt HIST_SAVE_NO_DUPS
+
+# Remove superfluous blanks before recording an entry
+setopt HIST_REDUCE_BLANKS
 
 # Uncomment to change how many often would you like to wait before auto-updates occur? (in days)
 # export UPDATE_ZSH_DAYS=13
@@ -75,13 +89,16 @@ fi
 eval $(dircolors $HOME/.dircolors)
 
 export LESS=' -SIR '
-export HISTSIZE=100000
-export SAVEHIST=100000
-export KEYTIMEOUT=1
+HISTSIZE=100000
+SAVEHIST=100000
+KEYTIMEOUT=1
 
+export AWS_PAGER=
 export BAT_THEME="Solarized (dark)"
+export DO_NOT_TRACK=1
 export FX_NO_MOUSE=1
 export FX_THEME=1
+export HOMEBREW_NO_ANALYTICS=1
 export JQ_COLORS="2;31:1;31:1;32:0;36:0;36:1;39:1;39"
 
 zstyle ':urlglobber' url-other-schema
