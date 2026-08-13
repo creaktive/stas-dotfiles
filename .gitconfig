@@ -7,6 +7,7 @@
 [gc]
     auto = 0
 [init]
+    defaultBranch = main
     templatedir = ~/.git_template
 
 # https://coderwall.com/p/-89vba
