@@ -98,6 +98,7 @@ export BAT_THEME="Solarized (dark)"
 export DO_NOT_TRACK=1
 export FX_NO_MOUSE=1
 export FX_THEME=1
+export GH_PAGER=
 export HOMEBREW_NO_ANALYTICS=1
 export JQ_COLORS="2;31:1;31:1;32:0;36:0;36:1;39:1;39"
 
@@ -142,4 +143,5 @@ fi
 alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..5}" /usr/share/dict/words'
 alias bru='brew upgrade --greedy && brew cleanup && brew cleanup -s'
 alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
+alias nobs='rg -n "[\u2010-\u201F\u2026\u00A0]|[\p{C}--[\t\r\n]]"'
 # zprof

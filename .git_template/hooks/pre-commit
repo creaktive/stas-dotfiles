@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Retrieve staged files (Added, Copied, Modified)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Exit early if no files are staged
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Detect ripgrep
+if command -v rg &> /dev/null; then
+    # ripgrep pattern (excludes \t, \r, \n from \p{C})
+    PATTERN='[\u2010-\u201F\u2026\u00A0\u00AD]|[\p{C}--[\t\r\n]]'
+    MATCHES=$(echo "$STAGED_FILES" | xargs rg --color=always -n -I "$PATTERN" 2>/dev/null)
+else
+    echo "[WARNING] 'rg' not installed. Skipping character check."
+    exit 0
+fi
+
+if [ -n "$MATCHES" ]; then
+    echo -e "\033[0;31m[ERROR] Commit aborted: Disallowed typography or invisible characters found!\033[0m\n"
+    echo "$MATCHES"
+    echo -e "\n\033[0;33mPlease strip em dashes, smart quotes, and zero-width spaces before committing.\033[0m"
+    exit 1
+fi
+
+exit 0
