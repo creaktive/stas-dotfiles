@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": true,
+  "model": "lmstudio/qwen3.6-35b-a3b",
+  "permission": {
+    "websearch": "allow"
+  },
+  "plugin": ["@dietrichgebert/ponytail"],
+  "provider": {
+    "lmstudio": {
+      "name": "EldenRig",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://100.67.74.84:11434/v1"
+      },
+      "models": {
+        "qwen3.6-35b-a3b": {
+          "name": "Qwen 3.6 35B-A3B",
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          }
+        }
+      }
+    }
+  }
+}

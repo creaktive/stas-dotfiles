@@ -101,6 +101,7 @@ export FX_THEME=1
 export GH_PAGER=
 export HOMEBREW_NO_ANALYTICS=1
 export JQ_COLORS="2;31:1;31:1;32:0;36:0;36:1;39:1;39"
+export OPENCODE_ENABLE_EXA=1
 
 zstyle ':urlglobber' url-other-schema
 
