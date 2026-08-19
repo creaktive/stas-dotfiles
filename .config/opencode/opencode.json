@@ -1,27 +1,44 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "experimental": {
+    "portable_shell_scanner": true
+  },
+  "instructions": [
+    "https://raw.githubusercontent.com/JRedeker/opencode-shell-strategy/trunk/shell_strategy.md"
+  ],
   "lsp": true,
   "model": "lmstudio/qwen3.6-35b-a3b",
   "permission": {
+    "webfetch": "allow",
     "websearch": "allow"
   },
-  "plugin": ["@dietrichgebert/ponytail"],
+  "plugin": [
+    "@Opencode-DCP/opencode-dynamic-context-pruning",
+    "@dietrichgebert/ponytail"
+  ],
   "provider": {
     "lmstudio": {
+      "models": {
+        "qwen3.6-35b-a3b": {
+          "limit": {
+            "context": 131072,
+            "output": 65536
+          },
+          "name": "Qwen 3.6 35B-A3B"
+        }
+      },
       "name": "EldenRig",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://100.67.74.84:11434/v1"
-      },
-      "models": {
-        "qwen3.6-35b-a3b": {
-          "name": "Qwen 3.6 35B-A3B",
-          "limit": {
-            "context": 131072,
-            "output": 65536
-          }
-        }
       }
+    },
+    "options": {
+      "parallel_tool_calls": false
     }
+  },
+  "tools": {
+    "webfetch": true,
+    "websearch": true
   }
 }
