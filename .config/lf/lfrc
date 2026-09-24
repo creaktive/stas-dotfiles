@@ -1,0 +1,68 @@
+set drawbox true
+set icons true
+set ignorecase true
+set incsearch true
+set mouse true
+set period 1
+set shell zsh
+set sixel false
+
+set previewer ~/.config/lf/preview.sh
+
+# open with EDITOR, images/pdf with macOS `open`
+map e $$EDITOR "$f"
+map o &open "$f"
+
+# delete to Trash instead of rm -rf
+map D trash "$f"
+map <c-d> trash "$fx"
+
+# FZF integration
+map g fzf-jump
+
+cmd fzf-jump ${{
+    res="$(rg --files --hidden --glob '!.git/*' --glob '!node_modules/*' | fzf --reverse --header='Jump')"
+    if [ -n "$res" ]; then
+        if [ -d "$res" ]; then
+            lf -remote "send $id cd \"$res\""
+        else
+            lf -remote "send $id select \"$res\""
+        fi
+    fi
+}}
+
+map / fzf-search
+
+cmd fzf-search ${{
+    res="$(rg --column --line-number --no-heading --color=always --smart-case . | fzf --ansi --reverse --header='Search text' | cut -d':' -f1)"
+    if [ -n "$res" ]; then
+        lf -remote "send $id select \"$res\""
+    fi
+}}
+
+# Bulk Rename
+map R bulkrename
+
+cmd bulkrename ${{
+    old=$(mktemp)
+    new=$(mktemp)
+
+    if [ -n "$fs" ]; then
+        printf '%s\n' "$fs" > "$old"
+    else
+        # Safely list all files in CWD without globbing edge cases
+        find . -maxdepth 1 -mindepth 1 ! -name '.*' -print | sed 's|^\./||' > "$old"
+    fi
+
+    cp "$old" "$new"
+    $EDITOR "$new"
+
+    paste "$old" "$new" | while IFS=$'\t' read -r src dst; do
+        if [ -n "$dst" ] && [ "$src" != "$dst" ] && [ -e "$src" ]; then
+            mv -- "$src" "$dst"
+        fi
+    done
+
+    rm -f "$old" "$new"
+    lf -remote "send $id reload"
+}}

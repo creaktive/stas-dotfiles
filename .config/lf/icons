@@ -1,0 +1,63 @@
+# Default types
+di 📁
+fi 📄
+ln 🔗
+or ⚠️
+ex ⚡
+
+# Code & Configs
+*.py 🐍
+*.js 🟨
+*.ts 🔷
+*.jsx ⚛️
+*.tsx ⚛️
+*.html 🌐
+*.css 🎨
+*.json 📋
+*.yaml ⚙️
+*.yml ⚙️
+*.toml ⚙️
+*.sh 📜
+*.zsh 📜
+*.bash 📜
+*.c ⚙️
+*.cpp ⚙️
+*.h ⚙️
+*.rs 🦀
+*.go 🐹
+*.lua 🌙
+*.pl 🐪
+
+# Documents & Text
+*.md 📝
+*.txt 📄
+*.pdf 📕
+*.doc 📘
+*.docx 📘
+*.csv 📊
+*.xls 📊
+*.xlsx 📊
+
+# Media & Images
+*.png 🖼️
+*.jpg 🖼️
+*.jpeg 🖼️
+*.gif 🎞️
+*.webp 🖼️
+*.svg 🎨
+*.mp3 🎵
+*.flac 🎵
+*.m4a 🎵
+*.wav 🎵
+*.mp4 🎥
+*.mkv 🎥
+*.mov 🎥
+
+# Archives & Executables
+*.zip 📦
+*.tar 📦
+*.gz 📦
+*.7z 📦
+*.rar 📦
+*.dmg 💿
+*.iso 💿
