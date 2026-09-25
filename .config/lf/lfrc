@@ -12,11 +12,10 @@ set previewer ~/.config/lf/preview.sh
 
 # open with EDITOR, images/pdf with macOS `open`
 map e $$EDITOR "$f"
-map o &open "$f"
+map <enter> &open "$f"
 
 # delete to Trash instead of rm -rf
-map D trash "$f"
-map <c-d> trash "$fx"
+map D &trash "$f"
 
 # FZF integration
 map g fzf-jump

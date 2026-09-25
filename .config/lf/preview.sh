@@ -71,7 +71,7 @@ mime_encoding=$(file -b --mime-encoding "$file")
 case "$mime_encoding" in
     binary)
         if command -v xxd >/dev/null 2>&1; then
-            exec xxd -g 1 -c 16 "$file"
+            exec xxd -g 1 -c 16 -R always "$file"
         elif command -v hexdump >/dev/null 2>&1; then
             exec hexdump -C "$file"
         else
