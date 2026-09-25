@@ -1,4 +1,5 @@
 set drawbox true
+set hidden true
 set icons true
 set ignorecase true
 set incsearch true
@@ -65,4 +66,14 @@ cmd bulkrename ${{
 
     rm -f "$old" "$new"
     lf -remote "send $id reload"
+}}
+
+# Copy full escaped path to tmux buffer
+map Y copy-path-tmux
+
+cmd copy-path-tmux ${{
+    if [ -n "$TMUX" ]; then
+        escaped=$(printf '%q' "$f")
+        tmux set-buffer "$escaped"
+    fi
 }}
