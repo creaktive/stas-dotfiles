@@ -56,8 +56,8 @@ COMPLETION_WAITING_DOTS="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(
     vi-mode
-    aws
-    cpanm
+    #aws
+    #cpanm
     fancy-ctrl-z
     fzf
     git
@@ -142,7 +142,10 @@ else
 fi
 
 alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..5}" /usr/share/dict/words'
-alias bru='brew upgrade --greedy && brew cleanup && brew cleanup -s'
+alias bru='brew update && brew upgrade --greedy && brew cleanup && brew cleanup -s'
 alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
 alias nobs='rg -n "[\u2010-\u201F\u2026\u00A0]|[\p{C}--[\t\r\n]]"'
+alias oc='nono run --allow-cwd --profile opencode -- opencode'
+alias cl='nono run --allow-cwd --profile claude -- claude --dangerously-skip-permissions'
+alias clq='nono run --allow-cwd --profile qwic-claude -- claude --dangerously-skip-permissions'
 # zprof
