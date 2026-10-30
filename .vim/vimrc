@@ -103,6 +103,11 @@ if has("persistent_undo")
     set undofile
 endif
 
+" :E :W typos act like :e :w, :Q saves and quits (:x); only alone on the : line, not in searches or other commands
+cnoreabbrev <expr> E getcmdtype() == ':' && getcmdline() ==# 'E' ? 'e' : 'E'
+cnoreabbrev <expr> W getcmdtype() == ':' && getcmdline() ==# 'W' ? 'w' : 'W'
+cnoreabbrev <expr> Q getcmdtype() == ':' && getcmdline() ==# 'Q' ? 'x' : 'Q'
+
 " make tab in v mode ident code
 vnoremap <Tab> >gv
 vnoremap <S-Tab> <gv
