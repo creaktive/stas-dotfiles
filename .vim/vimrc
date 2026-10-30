@@ -1,60 +1,66 @@
 set nocompatible
 
-" Pathogen
-call pathogen#infect()
-call pathogen#helptags()
+" work from any checkout (vim -u path/to/vimrc), not only ~/.vim
+let s:vimrc = expand('<sfile>:p')
+let s:dir = fnamemodify(s:vimrc, ':h')
+if index(map(split(&rtp, ','), 'fnamemodify(expand(v:val), ":p:h")'), s:dir) < 0
+    let &rtp = s:dir . ',' . &rtp . ',' . s:dir . '/after'
+endif
+
+call plug#begin(s:dir . '/plugged')
+Plug 'qpkorr/vim-bufkill'
+Plug 'othree/eregex.vim'
+Plug 'lifepillar/vim-solarized8'
+Plug 'airblade/vim-gitgutter'
+Plug 'tpope/vim-surround'
+Plug 'christoomey/vim-tmux-navigator'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'tpope/vim-vinegar'
+Plug 'tpope/vim-unimpaired'
+Plug 'junegunn/fzf'        " vim glue only; uses fzf binary from PATH
+Plug 'junegunn/fzf.vim'
+call plug#end()
+
+" bundled with Vim 9.1+: gc{motion}, gcc
+packadd! comment
+" tcomment-style toggle (Ctrl-/ twice)
+nmap <C-_><C-_> <Plug>(comment-toggle-line)
+xmap <C-_><C-_> <Plug>(comment-toggle)
+
+" own group, cleared on re-source so autocmds don't pile up
+augroup vimrc | autocmd! | augroup END
+
+" install missing plugins on first start (new machine)
+autocmd vimrc VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+  \| PlugInstall --sync | exe 'source' fnameescape(s:vimrc) | endif
 
 set number
 set mouse=a
 set vb
-set t_Co=256
-set guifont=Terminus\ Medium:h12
-set noantialias
-set guioptions-=T
-set guioptions-=L
-set guioptions-=r
-"let g:solarized_termcolors=256
-let g:solarized_italic=0
-let g:Powerline_symbols='fancy'
-colorscheme solarized
-let white_background=$WHITE_BACKGROUND
-if white_background == '1'
-    set background=light
-else
-    set background=dark
+set termguicolors
+" 'background' is left to Vim, which asks the terminal for its colors
+" Vim's builtin tmux/screen termcap has no query; tmux 3.3+ answers it
+if empty(&t_RB) && $TERM =~# '^\(tmux\|screen\)'
+    let &t_RB = "\<Esc>]11;?\<C-G>"
 endif
+silent! colorscheme solarized8
 set backspace=indent,eol,start
 
 " Display indentation guides
 set list
 set listchars=tab:¦\-,trail:·,extends:»,precedes:«,nbsp:×
 
-" Delete trailing white space
-func! DeleteTrailingWS()
-    exe "normal mz"
-    %s/\s\+$//ge
-    exe "normal `z"
-endfunc
-
-" Automatically delete training white space on save
-" autocmd BufWrite *.pl :call DeleteTrailingWS()
-" autocmd BufWrite *.pm :call DeleteTrailingWS()
-autocmd BufWrite *.py :call DeleteTrailingWS()
-autocmd BufWrite *.coffee :call DeleteTrailingWS()
-
 let g:airline_theme='solarized'
 let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#whitespace#enabled = 0
 
-" set cryptmethod=blowfish
-
-syntax on
-" set synmaxcol=200
 set colorcolumn=81
 set hlsearch
 
 set wildmenu
+set wildoptions=pum,fuzzy
 set cursorline
 set laststatus=2
 
@@ -67,10 +73,6 @@ set softtabstop=4
 set expandtab
 set linebreak
 
-set foldenable
-set foldmethod=syntax
-set foldlevel=10
-
 set autoindent
 set smartindent
 
@@ -82,138 +84,31 @@ set smartcase
 set showcmd
 set whichwrap+=<,>,h,l,[,]
 
-filetype on
-filetype plugin on
-filetype indent on
+" git ls-files inside a repo, else find
+nnoremap <silent> <C-p> :execute system('git rev-parse --is-inside-work-tree') =~ 'true' ? 'GFiles -co --exclude-standard' : 'Files'<CR>
 
-let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:100'
-let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard', 'find %s -maxdepth 4 -type f -size +0c']
-let g:CommandTUseGitLsFiles = 1
-
-" let g:perl_compiler_force_warnings = 0
-" let perl_fold=1
-" let perl_nofold_packages=1
-let perl_extended_vars=1
-let perl_include_pod=1
-autocmd FileType perl,mason :call SetupPerl()
-function! SetupPerl()
-    compiler perl
-    setlocal makeprg=perl\ -I.\ -I..\ -I../..\ -I../../..\ -Ilib\ -Mstrict\ -wc\ %
-    setlocal iskeyword=48-57,_,A-Z,a-z,192-255,:
-    setlocal path+=.,..,../..,../../..,lib
-    setlocal complete=.,w,b,u,t
-
-    map <F6> :%!perltidy<CR>
-    vmap <F6> :!perltidy<CR>
-endfunction
 set updatetime=500
 
-autocmd BufRead,BufNewFile /etc/nginx/* set ft=nginx
-autocmd BufRead,BufNewFile *.hql set ft=sql
-autocmd BufRead,BufNewFile /tmp/sql* set ft=sql
-autocmd BufRead,BufNewFile *.[ct]sv set ft=text
-
-set backup
-set backupdir=~/tmp,/tmp
-set dir=~/tmp,/tmp
+" swap/backup/undo under XDG state dir, like Neovim; 0700 since they hold file contents
+let s:state = (empty($XDG_STATE_HOME) ? expand('~/.local/state') : $XDG_STATE_HOME) . '/vim'
+for s:d in ['swap', 'backup', 'undo']
+    call mkdir(s:state . '/' . s:d, 'p', 0700)
+endfor
+" trailing // = full-path file names, so same-named files don't collide
+let &backupdir = s:state . '/backup//'
+let &directory = s:state . '/swap//'
 if has("persistent_undo")
-    set undodir=~/tmp,/tmp
+    let &undodir = s:state . '/undo//'
     set undofile
 endif
 
-"set grepprg=ack\ -a
-map <F7> :Ggrep -w <cword><CR>
-
-" dont use Q for Ex mode
-map Q :q
-
-" edit/write/quit alias
-cnoreabbrev E e
-cnoreabbrev W w
-cnoreabbrev Q w
-
-" overwrite protected files (https://coderwall.com/p/xp9kjw)
-cmap w!! %!sudo tee > /dev/null %
-
-" kill'em all!!!
-" nnoremap    <Up> <NOP>
-" nnoremap    <Down> <NOP>
-" nnoremap    <Left> <NOP>
-" nnoremap    <Right> <NOP>
-" noremap     <Insert> ""
-" noremap!    <Insert> <NOP>
-" noremap     <Delete> ""
-" noremap!    <Delete> <NOP>
-" noremap     <Home> ""
-" noremap!    <Home> <NOP>
-" noremap     <End> ""
-" noremap!    <End> <NOP>
-" noremap     <PageUp> ""
-" noremap!    <PageUp> <NOP>
-" noremap     <PageDown> ""
-" noremap!    <PageDown> <NOP>
-
-nnoremap k gk
-nnoremap j gj
-
-" now all operations work with the OS clipboard
-"set clipboard=unnamed
-
 " make tab in v mode ident code
-vmap <Tab> >gv
-vmap <S-Tab> <gv
+vnoremap <Tab> >gv
+vnoremap <S-Tab> <gv
 
-" Surround text currently selected while in visual mode
-" (The surrounded text is kept selected after being surround)
-vmap <leader>" S"lvi"
-vmap <leader>' S'lvi'
-vmap <leader>` S`lvi`
-vmap <leader>< S<
-" no space
-vmap <leader>) S)lvi(
-vmap <leader>} S}lvi{
-vmap <leader>] S]lvi[
-vmap <leader>> S>lvi<
-" with space
-vmap <leader>( S(lvi(
-vmap <leader>{ S{lvi{
-vmap <leader>[ S[lvi[
-
-" make tab in normal mode ident code
-"nmap <Tab> I<tab><esc>
-"nmap <S-Tab> ^i<bs><esc>
-
-"let g:SuperTabDefaultCompletionType = "context"
-let g:manpageview_multimanpage = 0
-
-" Ctrl-r searches for selected text
-vnoremap <C-r> "zy:/<C-r>z
-
-" eregex
-nnoremap <leader>/ :call eregex#toggle()<CR>
-
-map <F5> :make<CR>
-
-nnoremap <silent> <F8> :TagbarToggle<CR>
-let g:tagbar_autofocus = 1
-"let Tlist_Auto_Open=1
-let Tlist_Use_Right_Window=1
-let g:tagbar_type_perl = {
-    \ 'kinds' : [
-        \ 'p:packages:1:0',
-        \ 'c:constants:0:0',
-        \ 'f:formats:0:0',
-        \ 's:subroutines',
-    \ ],
-\ }
-
-"set autochdir
-set tags^=.git/tags
-
-"nnoremap <C-down> :BufExplorer<CR>
-"noremap <C-left> :bprev<CR>
-"noremap <C-right> :bnext<CR>
-"let g:buftabs_only_basename=1
+" :Man and K open man pages in a split (bundled with Vim)
+runtime ftplugin/man.vim
+set keywordprg=:Man
 
 " tmux-alike
 map <C-a> <C-w>
@@ -223,15 +118,7 @@ map <C-w>; <C-\>
 set splitbelow
 set splitright
 
-" Easily increase and decrease next number with ctrl+m and ctrl+n
-nnoremap <C-m> <C-a>
-nnoremap <C-n> <C-x>
-
-highlight clear SignColumn
-let g:gitgutter_realtime = 0
-let g:gitgutter_eager = 0
-
-autocmd BufReadPost * nested
+autocmd vimrc BufReadPost * nested
     \ if line("'\"") > 1 && line("'\"") <= line("$") |
     \   exe "normal! g`\"" |
     \ endif |
@@ -240,20 +127,4 @@ autocmd BufReadPost * nested
     \   e ++ff=dos |
     \ endif
 
-autocmd QuickFixCmdPost *grep* cwindow
-
-" \\g for global git search for word under the cursor (with highlight)
-nmap <leader>g :let @/="\\<<C-R><C-W>\\>"<CR>:set hls<CR>:silent Ggrep -w "<C-R><C-W>"<CR>:ccl<CR>:cw<CR><CR>
-
-" Stuff from http://programming.oreilly.com/2013/10/more-instantly-better-vim.html
-
-"====[ Make the 81st column stand out ]====================
-
-" OR ELSE just the 81st column of wide lines...
-" highlight ColorColumn ctermbg=magenta
-" call matchadd('ColorColumn', '\%81v', 100)
-
-set rtp+=/usr/local/opt/fzf
-set rtp+=/opt/homebrew/opt/fzf
-set rtp+=/usr/bin/fzf
-set rtp+=~/.fzf
+autocmd vimrc QuickFixCmdPost *grep* cwindow
