@@ -64,6 +64,7 @@ set wildoptions=pum,fuzzy
 set cursorline
 set laststatus=2
 
+" pt is Brazilian only (built from VERO pt_BR, no regions); see spell/build.sh
 set spell spelllang=nl,pt,en
 
 set history=10000

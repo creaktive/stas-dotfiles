@@ -75,4 +75,17 @@ files there can be deleted.
 
 Undo history, swap files and write backups go to `$XDG_STATE_HOME/vim`
 (default `~/.local/state/vim`), created with mode 0700 on startup.
-Spell checking is on for Dutch, Portuguese and English; word lists ship in `spell/`.
+Spell checking is on for Dutch, Brazilian Portuguese and English. English comes with Vim.
+
+## Spell files
+
+`spell/nl.utf-8.spl` and `spell/pt.utf-8.spl` are built from the
+[LibreOffice dictionaries](https://github.com/LibreOffice/dictionaries):
+
+- `nl`: [OpenTaal](https://opentaal.org) `nl_NL` (BSD / CC BY 3.0)
+- `pt`: [VERO](https://pt-br.libreoffice.org/projetos/vero/) `pt_BR` (LGPLv3 / MPL)
+
+To refresh them, run `spell/build.sh` (needs `curl` and `vim`; about a minute
+and 1.3 GB of RAM for Portuguese) and commit the new `.spl` files. The script
+patches the Dutch affix file for things Vim's `:mkspell` doesn't support
+(the `ij` ligature, `COMPOUNDBEGIN`/`END`, parenthesized compound flags).
