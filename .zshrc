@@ -146,6 +146,6 @@ alias bru='brew update && brew upgrade --greedy && brew cleanup && brew cleanup 
 alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
 alias nobs='rg -n "[\u2010-\u201F\u2026\u00A0]|[\p{C}--[\t\r\n]]"'
 alias oc='nono run --allow-cwd --profile opencode -- opencode'
-alias cl='nono run --allow-cwd --profile claude -- claude --dangerously-skip-permissions'
+alias cl='nono run --allow-cwd --profile claude-local -- claude --dangerously-skip-permissions'
 alias clq='nono run --allow-cwd --profile qwic-claude -- claude --dangerously-skip-permissions'
 # zprof
