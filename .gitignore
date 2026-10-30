@@ -1,5 +1,6 @@
 .Trash/
 .cache/
+.claude/
 .config/
 .cpan/
 .cpanm/
@@ -76,3 +77,6 @@ perl5/
 **/*.bak
 **/*.log
 **/.DS_Store
+
+.antidote/
+.zsh_plugins.zsh

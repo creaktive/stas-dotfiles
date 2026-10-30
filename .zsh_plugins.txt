@@ -1,0 +1,18 @@
+# antidote bundle list; `antidote update` to refresh
+
+# OMZ libs and selected plugins, without the OMZ framework
+getantidote/use-omz
+ohmyzsh/ohmyzsh path:lib
+ohmyzsh/ohmyzsh path:plugins/vi-mode
+ohmyzsh/ohmyzsh path:plugins/fancy-ctrl-z
+ohmyzsh/ohmyzsh path:plugins/fzf conditional:has_fzf
+ohmyzsh/ohmyzsh path:plugins/git
+ohmyzsh/ohmyzsh path:plugins/gnu-utils
+ohmyzsh/ohmyzsh path:plugins/ssh-agent
+
+# prompt fallback for machines without starship
+ohmyzsh/ohmyzsh path:themes/agnoster.zsh-theme conditional:no_starship
+
+zsh-users/zsh-autosuggestions
+# must be last
+zsh-users/zsh-syntax-highlighting
