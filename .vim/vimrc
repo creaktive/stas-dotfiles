@@ -1,7 +1,7 @@
 set nocompatible
 
 " work from any checkout (vim -u path/to/vimrc), not only ~/.vim
-let s:vimrc = expand('<sfile>:p')
+let s:vimrc = resolve(expand('<sfile>:p'))  " ~/.vimrc is a symlink
 let s:dir = fnamemodify(s:vimrc, ':h')
 if index(map(split(&rtp, ','), 'fnamemodify(expand(v:val), ":p:h")'), s:dir) < 0
     let &rtp = s:dir . ',' . &rtp . ',' . s:dir . '/after'
