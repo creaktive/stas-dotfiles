@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+# Re-fetch the vendored files listed in ~/bin/.upstream; review with `git diff`.
+# The local shebang line is kept, so upstream `#!/pro/bin/perl` & co. don't leak in.
+use strict;
+use warnings;
+
+use FindBin qw($Bin);
+use JSON::PP ();
+
+sub curl {
+    my (@args) = @_;
+    open(my $fh, '-|', curl => qw(-fsSL), @args) or die "curl: $!";
+    local $/;
+    my $out = <$fh>;
+    close $fh or die "curl @args failed\n";
+    return $out;
+}
+
+sub resolve {
+    my ($source) = @_;
+    if ($source =~ m{^github:([^/]+/[^/]+)/(.+)$}x) {
+        my ($repo, $path) = ($1, $2);
+        # the redirect target of /releases/latest ends with the tag name
+        my $url = curl(qw(-o /dev/null -w %{url_effective}), "https://github.com/$repo/releases/latest");
+        my ($tag) = $url =~ m{/tag/([^/]+)$}x or die "no release tag for $repo\n";
+        return "https://raw.githubusercontent.com/$repo/$tag/$path";
+    } elsif ($source =~ m{^cpan:([^/]+)/(.+)$}x) {
+        my ($dist, $path) = ($1, $2);
+        my $release = JSON::PP::decode_json(curl("https://fastapi.metacpan.org/v1/release/$dist"));
+        return "https://fastapi.metacpan.org/v1/source/$release->{author}/$release->{name}/$path";
+    }
+    return $source;
+}
+
+my $home = "$Bin/..";
+open(my $list, '<', "$Bin/.upstream") or die "$Bin/.upstream: $!";
+while (<$list>) {
+    next if m{^\s*(?:\#|$)}x;
+    my ($file, $source) = split;
+    my $path = "$home/$file";
+
+    my $new = eval { curl(resolve($source)) };
+    if (not defined $new or $new eq '') {
+        warn "! $file: ", $@ || "empty download\n";
+        next;
+    }
+
+    open(my $fh, '<:raw', $path) or die "$path: $!";
+    my $old = do { local $/; <$fh> };
+    close $fh;
+
+    my ($shebang) = $old =~ m{^(\#!.*\n)}x;
+    $new =~ s{^\#!.*\n}{$shebang}x if defined $shebang;
+
+    if ($new eq $old) {
+        print "= $file\n";
+    } else {
+        # write in place to keep the file mode
+        open($fh, '>:raw', $path) or die "$path: $!";
+        print {$fh} $new;
+        close $fh;
+        print "U $file\n";
+    }
+}

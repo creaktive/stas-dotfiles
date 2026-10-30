@@ -1,0 +1,16 @@
+# Vendored files, refreshed by `vendor-update`.
+# <path relative to $HOME>  <source>
+# source: plain URL
+#       | github:OWNER/REPO/PATH  (PATH at the latest release tag)
+#       | cpan:DIST/PATH          (PATH in the latest CPAN release)
+.dircolors          https://raw.githubusercontent.com/seebi/dircolors-solarized/master/dircolors.ansi-dark
+bin/256colors2.pl   https://conemu.github.io/256colors2.pl
+bin/cloc            github:AlDanial/cloc/cloc
+bin/depac           https://raw.githubusercontent.com/creaktive/dePAC/master/depac
+bin/diff-so-fancy   https://github.com/so-fancy/diff-so-fancy/releases/latest/download/diff-so-fancy
+bin/inxi            https://codeberg.org/smxi/inxi/raw/branch/master/inxi
+bin/prettyping      github:denilsonsa/prettyping/prettyping
+bin/rainbarf        https://raw.githubusercontent.com/creaktive/rainbarf/master/rainbarf
+bin/spark           https://raw.githubusercontent.com/holman/spark/master/spark
+bin/speedtest       cpan:App-SpeedTest/speedtest
+bin/wcurl           https://github.com/curl/wcurl/releases/latest/download/wcurl
