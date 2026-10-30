@@ -4,10 +4,9 @@
 #
 # Requires curl >= 7.46.0 (2015)
 #
-# Copyright (C) Samuel Henrique, <samueloph@debian.org>.
-# Copyright (C) Sergio Durigan Junior, <sergiodj@debian.org>
-# Copyright (C) Ryan Carsten Schmidt <git@ryandesign.com>
-# Copyright (C) Ben Zanin
+# Copyright (C) Samuel Henrique <samueloph@debian.org>, Sergio Durigan
+# Junior <sergiodj@debian.org> and many contributors, see the AUTHORS
+# file.
 #
 # Permission to use, copy, modify, and distribute this software for any purpose
 # with or without fee is hereby granted, provided that the above copyright
@@ -27,10 +26,10 @@
 #
 # SPDX-License-Identifier: curl
 
-# Stop on errors and on usage of unset variables.
-set -eu
+# Stop on errors, usage of unset variables and disable glob expansion.
+set -euf
 
-VERSION="2024.07.10+dev"
+VERSION="2026.10.12"
 
 PROGRAM_NAME="$(basename "$0")"
 readonly PROGRAM_NAME
@@ -49,38 +48,52 @@ usage()
     cat << _EOF_
 ${PROGRAM_NAME} -- a simple wrapper around curl to easily download files.
 
-Usage: ${PROGRAM_NAME} [--curl-options <CURL_OPTIONS>] [--dry-run] [--] <URL>...
-       ${PROGRAM_NAME} [--curl-options=<CURL_OPTIONS>] [--dry-run] [--] <URL>...
+Usage: ${PROGRAM_NAME} <URL>...
+       ${PROGRAM_NAME} [--curl-options <CURL_OPTIONS>]... [--no-decode-filename] [-o|-O|--output <PATH>] [--dry-run] [--] <URL>...
+       ${PROGRAM_NAME} [--curl-options=<CURL_OPTIONS>]... [--no-decode-filename] [--output=<PATH>] [--dry-run] [--] <URL>...
        ${PROGRAM_NAME} -h|--help
        ${PROGRAM_NAME} -V|--version
 
 Options:
 
-  --curl-options <CURL_OPTIONS>: Specify extra options to be
-                                 passed when invoking curl. May be
+  --curl-options <CURL_OPTIONS>: Specify extra options to be passed when invoking curl. May be
                                  specified more than once.
 
-  --dry-run: Don't actually execute curl, just print what would be
-             invoked.
+  -o, -O, --output <PATH>: Use the provided output path instead of getting it from the URL. If
+                           multiple URLs are provided, resulting files share the same name with a
+                           number appended to the end (curl >= 7.83.0). If this option is provided
+                           multiple times, only the last value is considered.
 
-  -V,--version: Print version information.
+  --no-decode-filename: Do not percent-decode the output filename, even if the percent-encoding in
+                        the URL was done by wcurl, e.g.: The URL contained whitespace.
 
-  -h,--help: Print this usage message.
+  --dry-run: Do not actually execute curl, print what would be invoked.
 
-  <URL>: The URL to be downloaded.  May be specified more than once.
+  -V, --version: Print version information.
+
+  -h, --help: Print this usage message.
+
+  <CURL_OPTIONS>: Any option supported by curl can be set here. This is not used by wcurl; it is
+                 instead forwarded to the curl invocation. The value is split on whitespace and
+                 quotes are not interpreted; use '--config <FILE>' for arguments containing
+                 whitespace. Never build it from untrusted input.
+
+  <URL>: URL to be downloaded. Anything that is not a parameter is considered
+         an URL. Whitespace is percent-encoded and the URL is passed to curl, which
+         then performs the parsing. May be specified more than once.
 _EOF_
 }
 
 # Display an error message and bail out.
 error()
 {
-    printf "%s\n" "$*" > /dev/stderr
+    printf "%s\n" "$*" >&2
     exit 1
 }
 
 # Extra curl options provided by the user.
-# This will be set per-URL for every URL provided.
-# Some options are global, but we are erroring on the side of needlesly setting
+# This is set per-URL for every URL provided.
+# Some options are global, but we are erroring on the side of needlessly setting
 # them multiple times instead of causing issues with parameters that needs to
 # be set per-URL.
 CURL_OPTIONS=""
@@ -88,16 +101,28 @@ CURL_OPTIONS=""
 # The URLs to be downloaded.
 URLS=""
 
-# The parameters that will be passed per-URL to curl.
+# Variable used to be set to the percent-decoded filename parsed from the URL, unless
+# --output or --no-decode-filename are used.
+OUTPUT_PATH=""
+HAS_USER_SET_OUTPUT="false"
+
+# The parameters that are passed per-URL to curl.
 readonly PER_URL_PARAMETERS="\
     --fail \
     --globoff \
     --location \
     --proto-default https \
-    --remote-name-all \
     --remote-time \
-    --retry 10 \
-    --retry-max-time 10 "
+    --retry 5 "
+
+# Valid percent-encode codes that are considered unsafe to be decoded.
+# This is a list of space-separated percent-encoded uppercase
+# characters.
+# 2F = /
+# 5C = \
+# 3A = :
+# 7F = DEL
+readonly UNSAFE_PERCENT_ENCODE="%2F %5C %3A %7F"
 
 # Whether to invoke curl or not.
 DRY_RUN="false"
@@ -109,51 +134,138 @@ sanitize()
         error "You must provide at least one URL to download."
     fi
 
-    readonly CURL_OPTIONS URLS DRY_RUN
+    # Split the extra curl options while IFS still has its default value, then
+    # join them back with spaces, so that restricting IFS below does not change
+    # the way the user's options are split.
+    # shellcheck disable=SC2086
+    set -- ${CURL_OPTIONS}
+
+    # Split the list of URLs on spaces only. Spaces are percent-encoded before a
+    # URL is added to the list, so every URL is a single field, and a tab or a
+    # newline inside one URL cannot turn it into more than one curl transfer.
+    IFS=" "
+    CURL_OPTIONS="$*"
+
+    readonly CURL_OPTIONS URLS DRY_RUN HAS_USER_SET_OUTPUT
+}
+
+# Indicate via exit code whether the string given in the first parameter
+# consists solely of characters from the string given in the second parameter.
+# In other words, it returns 0 if the first parameter only contains characters
+# from the second parameter, e.g.: Are $1 characters a subset of $2 characters?
+is_subset_of()
+{
+    case "${1}" in
+        *[!${2}]* | '') return 1 ;;
+    esac
+}
+
+# Indicate via exit code whether the HTML code given in the first
+# parameter is safe to be decoded.
+is_safe_percent_encode()
+{
+    upper_str=$(printf "%s" "${1}" | tr "[:lower:]" "[:upper:]")
+    for unsafe in ${UNSAFE_PERCENT_ENCODE}; do
+        if [ "${unsafe}" = "${upper_str}" ]; then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+# Print the given string percent-decoded.
+percent_decode()
+{
+    # Encodings of control characters (00-1F) are passed through without decoding.
+    # Iterate on the input character-by-character, decoding it.
+    printf "%s\n" "${1}" | fold -w1 | while IFS= read -r decode_out; do
+        # If character is a "%", read the next character as decode_hex1.
+        if [ "${decode_out}" = % ] && IFS= read -r decode_hex1; then
+            decode_out="${decode_out}${decode_hex1}"
+            # If there is one more character, read it as decode_hex2.
+            if IFS= read -r decode_hex2; then
+                decode_out="${decode_out}${decode_hex2}"
+                # Skip decoding if this is a control character (00-1F).
+                # Skip decoding if DECODE_FILENAME is not "true".
+                if [ "${DECODE_FILENAME}" = "true" ] \
+                    && is_subset_of "${decode_hex1}" "23456789abcdefABCDEF" \
+                    && is_subset_of "${decode_hex2}" "0123456789abcdefABCDEF" \
+                    && is_safe_percent_encode "${decode_out}"; then
+                    # Use printf to decode it into octal and then decode it to the final format.
+                    decode_out="$(printf "%b" "\\$(printf %o "0x${decode_hex1}${decode_hex2}")")"
+                fi
+            fi
+        fi
+        printf %s "${decode_out}"
+    done
+}
+
+# Print the percent-decoded filename portion of the given URL.
+get_url_filename()
+{
+    # Remove protocol, query string and URL fragments if present.
+    hostname_and_path="$(printf %s "${1}" | sed -e 's,^[^/]*//,,' -e 's,[?#].*$,,')"
+    # If what remains contains a slash, there is a path; return it percent-decoded.
+    case "${hostname_and_path}" in
+        # sed to remove everything preceding the last '/', e.g.: "example/something" becomes "something"
+        # sed to also replace '\' with the percent_encoded %5C and ':' with %3A
+        */*)
+            filename="$(percent_decode "$(printf %s "${hostname_and_path}" | sed -e 's,^.*/,,' -e 's,\\,%5C,g' -e 's,:,%3A,g')")"
+            [ "${filename}" = "-" ] && filename=""
+            printf %s "${filename}"
+            ;;
+    esac
+    # No slash means there was only a hostname and no path; return empty string.
 }
 
 # Execute curl with the list of URLs provided by the user.
-exec_curl() {
+exec_curl()
+{
     CMD="curl "
 
-    # Store version to check if it supports --no-clobber and --parallel.
+    # Store version to check if it supports --no-clobber, --parallel and --parallel-max-host.
     curl_version=$($CMD --version | cut -f2 -d' ' | head -n1)
+    curl_version_major=$(echo "$curl_version" | cut -f1 -d.)
+    curl_version_minor=$(echo "$curl_version" | cut -f2 -d.)
 
-    # --no-clobber is only supported since 7.83.0.
-    # --parallel is only supported since 7.66.0.
-    if [ "$(echo "$curl_version" | cut -f1 -d.)" -ge 8 ]; then
-        CURL_HAS_NO_CLOBBER="--no-clobber"
-        CURL_HAS_PARALLEL="--parallel"
-    elif [ "$(echo "$curl_version" | cut -f1 -d.)" -eq 7 ];then
-        if [ "$(echo "$curl_version" | cut -f2 -d.)" -ge 83 ]; then
-            CURL_HAS_NO_CLOBBER="--no-clobber"
-        else
-            CURL_HAS_NO_CLOBBER=""
+    CURL_NO_CLOBBER=""
+    CURL_PARALLEL=""
+
+    if [ "${curl_version_major}" -ge 8 ]; then
+        CURL_NO_CLOBBER="--no-clobber"
+        CURL_PARALLEL="--parallel --parallel-max-host 5"
+
+        # --parallel-max-host is only supported since 8.16.0.
+        if [ "${curl_version_major}" -eq 8 ] && [ "${curl_version_minor}" -lt 16 ]; then
+            CURL_PARALLEL="--parallel"
         fi
-        if [ "$(echo "$curl_version" | cut -f2 -d.)" -ge 66 ]; then
-            CURL_HAS_PARALLEL="--parallel"
-        else
-            CURL_HAS_PARALLEL=""
+    elif [ "${curl_version_major}" -eq 7 ]; then
+        # --no-clobber is only supported since 7.83.0.
+        if [ "${curl_version_minor}" -ge 83 ]; then
+            CURL_NO_CLOBBER="--no-clobber"
         fi
-    else
-        CURL_HAS_NO_CLOBBER=""
-        CURL_HAS_PARALLEL=""
+        # --parallel is only supported since 7.66.0.
+        if [ "${curl_version_minor}" -ge 66 ]; then
+            CURL_PARALLEL="--parallel"
+        fi
     fi
 
-    # Detecting whether we need --parallel.  It's easier to rely on
+    # Detecting whether we need --parallel. It is easier to rely on
     # the shell's argument parsing.
     # shellcheck disable=SC2086
     set -- $URLS
 
-    if [ "$#" -gt 1 ]; then
-        CURL_PARALLEL="$CURL_HAS_PARALLEL"
-    else
+    # If there are less than two URLs, do not set the parallel flag.
+    if [ "$#" -lt 2 ]; then
         CURL_PARALLEL=""
+    elif [ "${HAS_USER_SET_OUTPUT}" = "true" ] && [ -z "${CURL_NO_CLOBBER}" ]; then
+        error "Using '--output' with multiple URLs requires curl >= 7.83.0 ('--no-clobber')."
     fi
 
     # Start assembling the command.
     #
-    # We use 'set --' here (again) because (a) we don't have arrays on
+    # We use 'set --' here (again) because (a) we do not have arrays on
     # POSIX shell, and (b) we need better control over the way we
     # split arguments.
     #
@@ -162,8 +274,14 @@ exec_curl() {
 
     NEXT_PARAMETER=""
     for url in ${URLS}; do
+        # If the user did not provide an output path, define one.
+        if [ "${HAS_USER_SET_OUTPUT}" = "false" ]; then
+            OUTPUT_PATH="$(get_url_filename "${url}")"
+            # If we could not get a path from the URL, use the default: index.html.
+            [ -z "${OUTPUT_PATH}" ] && OUTPUT_PATH=index.html
+        fi
         # shellcheck disable=SC2086
-        set -- "$@" ${NEXT_PARAMETER} ${PER_URL_PARAMETERS} ${CURL_HAS_NO_CLOBBER} ${CURL_OPTIONS} "${url}"
+        set -- "$@" ${NEXT_PARAMETER} ${PER_URL_PARAMETERS} ${CURL_NO_CLOBBER} --output "${OUTPUT_PATH}" ${CURL_OPTIONS} --url "${url}"
         NEXT_PARAMETER="--next"
     done
 
@@ -174,6 +292,9 @@ exec_curl() {
     fi
 }
 
+# Default to decoding the output filename
+DECODE_FILENAME="true"
+
 # Use "${1-}" in order to avoid errors because of 'set -u'.
 while [ -n "${1-}" ]; do
     case "${1}" in
@@ -183,6 +304,9 @@ while [ -n "${1-}" ]; do
             ;;
 
         --curl-options)
+            if [ -z "${2-}" ]; then
+                error "Option '${1}' requires an argument."
+            fi
             shift
             CURL_OPTIONS="${CURL_OPTIONS} ${1}"
             ;;
@@ -191,12 +315,37 @@ while [ -n "${1-}" ]; do
             DRY_RUN="true"
             ;;
 
-        -h|--help)
+        --output=*)
+            opt=$(printf "%s\n" "${1}" | sed 's/^--output=//')
+            HAS_USER_SET_OUTPUT="true"
+            OUTPUT_PATH="${opt}"
+            ;;
+
+        -o | -O | --output)
+            if [ -z "${2-}" ]; then
+                error "Option '${1}' requires an argument."
+            fi
+            shift
+            HAS_USER_SET_OUTPUT="true"
+            OUTPUT_PATH="${1}"
+            ;;
+
+        -o* | -O*)
+            opt=$(printf "%s\n" "${1}" | sed 's/^-[oO]//')
+            HAS_USER_SET_OUTPUT="true"
+            OUTPUT_PATH="${opt}"
+            ;;
+
+        --no-decode-filename)
+            DECODE_FILENAME="false"
+            ;;
+
+        -h | --help)
             usage
             exit 0
             ;;
 
-        -V|--version)
+        -V | --version)
             print_version
             exit 0
             ;;
@@ -205,7 +354,7 @@ while [ -n "${1-}" ]; do
             # This is the start of the list of URLs.
             shift
             for url in "$@"; do
-                # Encode whitespaces into %20, since wget supports those URLs.
+                # Encode whitespace into %20, since wget supports those URLs.
                 newurl=$(printf "%s\n" "${url}" | sed 's/ /%20/g')
                 URLS="${URLS} ${newurl}"
             done
@@ -218,7 +367,7 @@ while [ -n "${1-}" ]; do
 
         *)
             # This must be a URL.
-            # Encode whitespaces into %20, since wget supports those URLs.
+            # Encode whitespace into %20, since wget supports those URLs.
             newurl=$(printf "%s\n" "${1}" | sed 's/ /%20/g')
             URLS="${URLS} ${newurl}"
             ;;

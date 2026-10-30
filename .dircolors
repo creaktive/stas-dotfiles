@@ -64,9 +64,12 @@ TERM cygwin
 TERM dtterm
 TERM dvtm
 TERM dvtm-256color
+TERM eat-256color
+TERM eat-truecolor
 TERM Eterm
 TERM eterm-color
 TERM fbterm
+TERM foot
 TERM gnome
 TERM gnome-256color
 TERM jfbterm
@@ -74,6 +77,7 @@ TERM konsole
 TERM konsole-256color
 TERM kterm
 TERM linux
+TERM linux-16color
 TERM linux-c
 TERM mach-color
 TERM mlterm
@@ -117,6 +121,7 @@ TERM xterm-256color-italic
 TERM xterm-88color
 TERM xterm-color
 TERM xterm-debian
+TERM xterm-ghostty
 TERM xterm-kitty
 TERM xterm-termite
 
@@ -230,6 +235,7 @@ EXEC 01;31  # Unix
 .el 32
 .vim 32
 .java 32
+.lua 32
 .pl 32
 .pm 32
 .py 32
@@ -310,8 +316,10 @@ EXEC 01;31  # Unix
 .yuv 33
 .nef 33 # Nikon RAW format
 .NEF 33
+.webp 33
 .heic 33
 .HEIC 33
+.avif 33
 
 # Audio
 .aac 33
@@ -459,7 +467,7 @@ EXEC 01;31  # Unix
 #.ORIG 01;36
 #.swp 01;36
 #.swo 01;36
-#*.v 01;36
+#*,v 01;36
 .bak 01;33
 .BAK 01;33
 .old 01;33
@@ -473,7 +481,7 @@ EXEC 01;31  # Unix
 .ORIG 01;33
 .swp 01;33
 .swo 01;33
-*.v 01;33
+*,v 01;33
 
 # The brightmagenta (Solarized: purple) color is free for you to use for your
 # custom file type

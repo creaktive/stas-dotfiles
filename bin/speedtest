@@ -1,13 +1,13 @@
 #!/usr/bin/env perl
 
 # speedtest - test network speed using speedtest.net
-# (m)'20 [2020-06-30] Copyright H.M.Brand 2014-2020
+# (m)'26 [2026-01-09] Copyright H.M.Brand 2014-2026
 
 require 5.010;
 use strict;
 use warnings;
 
-our $VERSION = "0.27";
+our $VERSION = "0.31";
 our $CMD = $0; $CMD =~ s{.*/}{};
 
 sub usage {
@@ -632,7 +632,7 @@ flash is not required
 It was written to feature the functionality that speedtest.net offers
 without the overhead of flash or java and the need of a browser.
 
-=head1 Raison-d'Ãªtre
+=head1 Raison-d'être
 
 The tool is there to give you a quick indication of the achievable
 throughput of your current network. That can drop dramatically if
@@ -758,10 +758,10 @@ Be very patient if running this with L</--all>.
    5: 29238 - Arcadiz              DIEGEM           166.33 km      58 ms
    6:  5151 - Combell              Brussels         173.04 km      59 ms
    7: 26887 - Arxus NV             Brussels         173.04 km      64 ms
-   8:  4812 - Universite Catholiqâ¦ Louvain-La-Neuv  186.87 km      70 ms
+   8:  4812 - Universite Catholiq… Louvain-La-Neuv  186.87 km      70 ms
    9:  2848 - Cu.be Solutions      Diegem           166.33 km      75 ms
   10: 12306 - VOO                  Liège            186.26 km      80 ms
-  11: 24261 - Une Nouvelle Villeâ¦  Charleroi        217.48 km     147 ms
+  11: 24261 - Une Nouvelle Ville…  Charleroi        217.48 km     147 ms
   12: 30594 - Orange Belgium       Evere            169.29 km     150 ms
 
 If a server does not respond, a very high latency is used as default.
@@ -1094,7 +1094,7 @@ personal use, but was asked to make it publicly available as application.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014-2020 H.Merijn Brand
+Copyright (C) 2014-2026 H.Merijn Brand
 
 This software is free; you can redistribute it and/or modify
 it under the same terms as Perl itself.
