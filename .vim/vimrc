@@ -44,6 +44,21 @@ set termguicolors
 if empty(&t_RB) && $TERM =~# '^\(tmux\|screen\)'
     let &t_RB = "\<Esc>]11;?\<C-G>"
 endif
+" undercurl: Vim takes t_Cs from tmux terminfo's Cs, which is cursor colour
+" each underline style carries its red color (58, Solarized red); guisp=NONE
+" below keeps Vim from sending solarized8's violet on redraws
+let s:ul = "\<Esc>[58;2;220;50;47m"
+let &t_Cs = "\<Esc>[4:3m" . s:ul  " curly
+let &t_ds = "\<Esc>[4:4m" . s:ul  " dotted
+let &t_Ds = "\<Esc>[4:5m" . s:ul  " dashed
+let &t_Us = "\<Esc>[4:2m" . s:ul  " double
+let &t_Ce = "\<Esc>[4:0m\<Esc>[59m"
+" with termguicolors, attributes still come from cterm=, which solarized8 sets
+" to plain underline; keep the text color, show only the underline, one
+" style per group
+autocmd vimrc ColorScheme * for [s:g, s:u] in [['SpellBad', 'undercurl'],
+  \ ['SpellCap', 'underdotted'], ['SpellRare', 'underdashed'], ['SpellLocal', 'underdouble']]
+  \| exe 'hi' s:g 'cterm=' . s:u 'ctermfg=NONE guifg=NONE guisp=NONE' | endfor
 silent! colorscheme solarized8
 set backspace=indent,eol,start
 
