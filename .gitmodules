@@ -1,3 +1,0 @@
-[submodule "stas-vim"]
-    path = .vim
-    url = https://github.com/creaktive/stas-vim.git
