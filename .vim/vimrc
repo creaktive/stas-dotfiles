@@ -38,6 +38,11 @@ autocmd vimrc VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)
 set number
 set mouse=a
 set vb
+" Vim 8.2 fills t_8f/t_8b only for xterm TERM, not tmux-256color: no colors
+if empty(&t_8f)
+    let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+    let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+endif
 set termguicolors
 " 'background' is left to Vim, which asks the terminal for its colors
 " Vim's builtin tmux/screen termcap has no query; tmux 3.3+ answers it
