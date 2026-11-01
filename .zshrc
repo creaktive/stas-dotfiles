@@ -58,6 +58,9 @@ KEYTIMEOUT=1
 
 export AWS_PAGER=
 export BAT_THEME="Solarized (dark)"
+# Vim's initial 'background' guess: dark, so no white flash before the t_RB
+# reply lands; unlike :set background in vimrc, the reply still overrides it
+export COLORFGBG="${COLORFGBG:-15;0}"
 export DO_NOT_TRACK=1
 export FX_NO_MOUSE=1
 export FX_THEME=1
