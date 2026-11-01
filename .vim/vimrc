@@ -23,7 +23,7 @@ Plug 'junegunn/fzf.vim'
 call plug#end()
 
 " bundled with Vim 9.1+: gc{motion}, gcc
-packadd! comment
+silent! packadd! comment
 " tcomment-style toggle (Ctrl-/ twice)
 nmap <C-_><C-_> <Plug>(comment-toggle-line)
 xmap <C-_><C-_> <Plug>(comment-toggle)
@@ -75,7 +75,7 @@ set colorcolumn=81
 set hlsearch
 
 set wildmenu
-set wildoptions=pum,fuzzy
+silent! set wildoptions=pum,fuzzy
 set cursorline
 set laststatus=2
 
