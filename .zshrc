@@ -81,6 +81,9 @@ alias t='tmux new -As0'
 alias tb='tmux save-buffer'
 alias ts='eval $( tmux show-env -s | grep "^SSH_" )'
 
+# dotfiles repo lives outside $HOME/.git so tools don't pick it up
+alias gith='git --git-dir=$HOME/.dotfiles.git'
+
 alias grep="grep $GREP_OPTIONS"
 unset GREP_OPTIONS GREP_COLOR
 
