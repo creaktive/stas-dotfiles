@@ -3,11 +3,7 @@ AWS=aws
 DATE=$(which gdate || which date)
 JQ=jq
 
-$DATE -d tomorrow &>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Incompatible date command" &>2
-    exit 1
-fi
+$DATE -d tomorrow &>/dev/null || { echo "Incompatible date command" >&2; exit 1; }
 
 startTime=yesterday
 endTime=now
@@ -25,7 +21,7 @@ Usage: aws-logs-query-all [options...] <query>
  -f, --from         Search from timestamp (default: yesterday)
  -t, --to           Search to timestamp (default: now)
  -l, --limit        Results limit (default: 10000)
- -g, --group        Match group names to substring (default: lambda)
+ -g, --group        Match group names to regex (default: lambda)
  -d, --describe     Describe non-empty matching groups and exit
 HELP
             exit
@@ -55,7 +51,7 @@ HELP
             shift
             ;;
         -*|--*)
-            echo "Unknown option $1"
+            echo "Unknown option $1" >&2
             exit 1
             ;;
         *)
@@ -65,75 +61,79 @@ HELP
     esac
 done
 
-query="${ARGS[@]:-fields @message | filter @message like /^\{/ | sort @timestamp asc}"
+query="${ARGS[@]:-fields @timestamp, @message | filter @message like /^\{/ | sort @timestamp asc}"
 
-tmpDir=$(mktemp -d)
-if [ $? -ne 0 ]; then
-    echo "Can't create temporary dir" &>2
-    exit 1
-fi
-cd $tmpDir
+startEpoch=$($DATE -d "$startTime" +%s) || exit 1
+endEpoch=$($DATE -d "$endTime" +%s) || exit 1
 
-groups='groups.json'
-$AWS logs describe-log-groups \
-    | $JQ "
+# Groups created after the end time make the whole 50-group query fail with MalformedQueryException
+groups=$($AWS logs describe-log-groups \
+    | $JQ --arg filter "$groupNameFilter" --argjson endMs "${endEpoch}000" '
         .logGroups[]
         | select(
             (.storedBytes > 0) and
-            (.logGroupName | test(\"$groupNameFilter\"))
+            (.creationTime <= $endMs) and
+            (.logGroupName | test($filter))
         )
-    " > $groups
+    ')
 
 if [ -n "$describe" ]; then
-    $JQ < $groups
-    rm -rf $tmpDir
+    echo "$groups"
     exit
 fi
 
-$JQ -r ".logGroupName" < $groups \
-    | shuf \
-    | split -l 50 - subgroup
+if [ -z "$groups" ]; then
+    echo "No log groups match '$groupNameFilter' in that time range" >&2
+    exit 1
+fi
 
-rm $groups
-
+failed=0
 QUERIES=()
-for subgroup in subgroup*
-do
+while read -r names; do
     queryId=$(
         $AWS logs start-query \
-            --limit $limit \
-            --start-time $($DATE -d "$startTime" +%s) \
-            --end-time $($DATE -d "$endTime" +%s) \
-            --log-group-names $(cat $subgroup) \
+            --limit "$limit" \
+            --start-time $startEpoch \
+            --end-time $endEpoch \
+            --log-group-names $names \
             --query-string "$query" \
             | $JQ -r .queryId
     )
+    [ -z "$queryId" ] && { failed=1; continue; }
     QUERIES+=($queryId)
-    rm $subgroup
     echo $AWS logs get-query-results --query-id $queryId >&2
-done
-
-rmdir $tmpDir
+done < <($JQ -r .logGroupName <<< "$groups" | shuf | xargs -n 50)
 
 for queryId in "${QUERIES[@]}"
 do
     while true; do
-        $AWS logs get-query-results \
-            --query-id $queryId \
-            | $JQ '
-                if .status == "Running" then
-                    .statistics
-                    | halt_error(1)
-                else
+        result=$($AWS logs get-query-results --query-id $queryId) || { failed=1; break; }
+        status=$($JQ -r .status <<< "$result")
+        case $status in
+            Scheduled|Running)
+                $JQ -c .statistics <<< "$result" >&2
+                sleep 1
+                ;;
+            Complete)
+                $JQ '
                     .results[]
                     | map({(.field | sub("\\W"; "_"; "g")): .value})
                     | add
-                    | ._message? | fromjson?
-                    | {timestamp} + .
-                end
-            ' && break
-        sleep 1
+                    | (._message | fromjson?) as $m
+                    | {timestamp: ((._timestamp | sub(" "; "T") + "Z")? // $m.timestamp)} + ($m | del(.timestamp))
+                ' <<< "$result"
+                if $JQ -e '.statistics.resultCount >= 10000' <<< "$result" >/dev/null; then
+                    echo "WARNING: query $queryId hit the 10000-row cap, results are truncated" >&2
+                fi
+                break
+                ;;
+            *)
+                echo "Query $queryId ended with status: $status" >&2
+                failed=1
+                break
+                ;;
+        esac
     done
 done
 
-exit 0
+exit $failed
