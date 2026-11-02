@@ -91,9 +91,9 @@ alias grep="grep $GREP_OPTIONS"
 unset GREP_OPTIONS GREP_COLOR
 
 if which bat &>/dev/null; then
-    alias cat='bat -P'
+    alias cat='bat'
 elif which batcat &>/dev/null; then
-    alias cat='batcat -P'
+    alias cat='batcat'
 fi
 
 if which starship &>/dev/null; then
