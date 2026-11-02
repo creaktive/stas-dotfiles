@@ -2,20 +2,13 @@
     name = Stanislaw Pusep
     email = creaktive@gmail.com
 
-[preload]
-    index = true
 [gc]
     auto = 0
 [init]
     defaultBranch = main
-    templatedir = ~/.git_template
 
 # https://coderwall.com/p/-89vba
 [color]
-    diff = auto
-    status = auto
-    branch = auto
-    interactive = auto
     ui = true
     pager = true
 [color "status"]
@@ -31,7 +24,7 @@
     pretty = fuller
 [alias]
     unstage = reset HEAD
-    undopush = push -f origin HEAD^:master
+    undopush = !git push --force-with-lease origin HEAD^:$(git rev-parse --abbrev-ref HEAD)
     prp = !git pull --rebase && git push
     g = grep --break --heading --line-number --context 1 --show-function
     stahp = config oh-my-zsh.hide-status 1
@@ -49,12 +42,20 @@
         --format=format:'%C(bold cyan)%h%C(reset) %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)%an%C(reset) %C(bold yellow)%d%C(reset)' \
         --branches --remotes --tags
 [core]
-    excludesfile = $HOME/.gitignore
     pager = $HOME/bin/diff-so-fancy | less --tabs=4 -FRSX
-    whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
+    whitespace = -indent-with-non-tab,trailing-space,cr-at-eol
     editor = vim
+[apply]
+    whitespace = fix
 [push]
     default = upstream
+    autoSetupRemote = true
+[fetch]
+    prune = true
+[diff]
+    algorithm = histogram
+[rerere]
+    enabled = true
 [merge]
     tool = vimdiff
     # Include summaries of merged commits in newly created merge commit messages
@@ -66,8 +67,6 @@
     insteadOf = "gh:"
 
 # https://stackoverflow.com/questions/30208928/can-git-pull-automatically-stash-and-pop-pending-changes/30209750#30209750
-[pull]
-    rebase = true
 [rebase]
     autoStash = true
 
