@@ -1,15 +1,4 @@
-if [ "$SHELL" == "/opt/local/bin/bash" ]; then
-
-    # MacPorts Installer addition on 2012-07-30_at_22:44:09: adding an appropriate PATH variable for use with MacPorts.
-    export PATH=/opt/local/bin:/opt/local/sbin:$PATH
-    # Finished adapting your PATH environment variable for use with MacPorts.
-
-    export PATH=/opt/local/lib/postgresql92/bin:$PATH
-    #export PATH=/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
-fi
-
-export NODE_PATH=$HOME/node_modules
-export PATH=$HOME/.vim/bin:$HOME/bin:$NODE_PATH/.bin:$PATH
+export PATH=$HOME/bin:$PATH
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -24,10 +13,8 @@ if [ -d "$HOME/perl5/lib/perl5" ]; then
     eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
 fi
 
-. setup-bash-complete
-
 if [ -e "$HOME/.bashrc" ]; then
-    source "$HOME/.bashrc:"
+    source "$HOME/.bashrc"
 fi
 
 export EDITOR=vim

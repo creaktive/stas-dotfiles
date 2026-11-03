@@ -11,4 +11,6 @@ export PERL_MM_USE_DEFAULT=1
 
 export EDITOR=vim
 
+export MC_SKIN=solarized
+
 export HOMEBREW_CASK_OPTS="--no-quarantine"
