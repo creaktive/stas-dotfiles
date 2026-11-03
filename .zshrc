@@ -1,7 +1,7 @@
 # zmodload zsh/zprof
 
-HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
-HIST_FIND_NO_DUPS=1
+# Skip duplicates when searching history
+setopt HIST_FIND_NO_DUPS
 
 # Share history across all open terminal tabs
 setopt SHARE_HISTORY
@@ -45,11 +45,18 @@ antidote load
 # Customize to your needs...
 
 if [[ -f $HOME/.ssh/known_hosts ]]; then
-    hosts=( $( cut -d ' ' -f 1 $HOME/.ssh/known_hosts | cut -d , -f 1 ) )
-    zstyle ':completion:*:hosts' hosts $hosts
+    () {
+        local -a hosts
+        # first name per line; drop hashed (|1|...), marker (@...) and comment lines; [host]:port -> host
+        hosts=( ${${(f)"$(<$HOME/.ssh/known_hosts)"}%%[ ,]*} )
+        hosts=( ${(u)${${hosts:#[|@#]*}#\[}%%\]*} )
+        zstyle ':completion:*:hosts' hosts $hosts
+    }
 fi
 
-eval $(dircolors $HOME/.dircolors)
+if (( $+commands[dircolors] )) && [[ -f $HOME/.dircolors ]]; then
+    eval $(dircolors $HOME/.dircolors)
+fi
 
 export LESS=' -SIR '
 HISTSIZE=100000
@@ -71,8 +78,6 @@ export OPENCODE_ENABLE_EXA=1
 
 zstyle ':urlglobber' url-other-schema
 
-# bind UP and DOWN arrow keys
-zmodload zsh/terminfo
 bindkey '^ ' autosuggest-execute
 bindkey '^[.' insert-last-word
 bindkey '^[q' push-line
@@ -87,21 +92,14 @@ alias ts='eval $( tmux show-env -s | grep "^SSH_" )'
 # dotfiles repo lives outside $HOME/.git so tools don't pick it up
 alias gith='git --git-dir=$HOME/.dotfiles.git'
 
-alias grep="grep $GREP_OPTIONS"
-unset GREP_OPTIONS GREP_COLOR
-
-if which bat &>/dev/null; then
+if (( $+commands[bat] )); then
     alias cat='bat'
-elif which batcat &>/dev/null; then
+elif (( $+commands[batcat] )); then
     alias cat='batcat'
 fi
 
-if which starship &>/dev/null; then
+if (( $+commands[starship] )); then
     eval "$(starship init zsh)"
-fi
-
-if which sf &>/dev/null; then
-    eval $(sf autocomplete script zsh)
 fi
 
 if [ `uname` = "Darwin" ]; then
@@ -110,7 +108,7 @@ else
     alias dm='sudo dmesg -HP'
 fi
 
-alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand\$#w]}1..5}" /usr/share/dict/words'
+alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand@w]}1..5}" /usr/share/dict/words'
 alias bru='brew update && brew upgrade --greedy && brew cleanup && brew cleanup -s'
 alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
 alias nobs='rg -n "[\u2010-\u201F\u2026\u00A0]|[\p{C}--[\t\r\n]]"'

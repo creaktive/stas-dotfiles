@@ -6,18 +6,17 @@ if [ `uname` = "Darwin" ]; then
     fi
     if [ -x "$HOMEBREW_PREFIX/opt/curl/bin/curl" ]; then
         export PATH="$HOMEBREW_PREFIX/opt/curl/bin:$PATH"
-        export LDFLAGS="-L$HOMEBREW_PREFIX/opt/curl/lib"
-        export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/curl/include"
-        export PKG_CONFIG_PATH="i$HOMEBREW_PREFIX/opt/curl/lib/pkgconfig"
-    fi
-    if [ -e "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc" ]; then
-        source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc"
-        source "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc"
+        # tied unique arrays: prepend without duplicating in nested login shells
+        typeset -xTU LDFLAGS ldflags ' '
+        typeset -xTU CPPFLAGS cppflags ' '
+        typeset -xTU PKG_CONFIG_PATH pkg_config_path
+        ldflags=(-L$HOMEBREW_PREFIX/opt/curl/lib $ldflags)
+        cppflags=(-I$HOMEBREW_PREFIX/opt/curl/include $cppflags)
+        pkg_config_path=($HOMEBREW_PREFIX/opt/curl/lib/pkgconfig $pkg_config_path)
     fi
     if [ -x "$HOMEBREW_PREFIX/opt/mysql-client/bin/mysql" ]; then
         export PATH="$HOMEBREW_PREFIX/opt/mysql-client/bin:$PATH"
     fi
-    ssh-add -A &> /dev/null
 fi
 
 if [ -e "$HOME/perl5/perlbrew/etc/bashrc" ]; then
@@ -26,7 +25,5 @@ elif [ -d "$HOME/perl5/lib/perl5" ]; then
     eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
 fi
 
-if [ -e "$HOME/.profile" ]; then
-    source "$HOME/.profile"
-fi
-
+# after path_helper, brew shellenv and perlbrew, so user dirs win
+path=($user_path $path)
