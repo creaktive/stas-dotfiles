@@ -108,6 +108,12 @@ else
     alias dm='sudo dmesg -HP'
 fi
 
+if pgrep --version &>/dev/null; then
+    alias pg='pgrep -af'
+else
+    alias pg='pgrep -lf'
+fi
+
 alias xpg='perl -E "@w=grep/^[a-z]{3,9}$/i,map s/^\s+|\s+$//grs,<ARGV>;for(1..10){say join q{ },map{fc\$w[rand@w]}1..5}" /usr/share/dict/words'
 alias bru='brew update && brew upgrade --greedy && brew cleanup && brew cleanup -s'
 alias apu='sudo apt -y update && sudo apt -y upgrade && sudo apt clean'
