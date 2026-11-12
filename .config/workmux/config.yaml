@@ -1,0 +1,6 @@
+agent: cl
+nerdfont: true
+panes:
+  - command: <agent>
+    focus: true
+  - split: horizontal
