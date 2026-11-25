@@ -26,6 +26,7 @@
     unstage = reset HEAD
     undopush = !git push --force-with-lease origin HEAD^:$(git rev-parse --abbrev-ref HEAD)
     prp = !git pull --rebase && git push
+    d = diff
     g = grep --break --heading --line-number --context 1 --show-function
     stahp = config oh-my-zsh.hide-status 1
     po = !git push -u origin $(git rev-parse --abbrev-ref HEAD)
